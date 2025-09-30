@@ -10,6 +10,8 @@ const clientData = {
   email: 'sarah.williams@example.com',
   phone: '+33 6 12 34 56 78',
   vehicle: 'BMW X3',
+  maxKm : '122 000',
+  vehicleColor: 'Rouge',
   step: 2,
   progress: 60,
   budget: '€35,000',
@@ -350,7 +352,7 @@ const ClientDetail: React.FC = () => {
             </div>
             <div className="p-6">
               {/* Étape 1: Infos Client & Présélection */}
-              {activeTab === 1 && <div className="space-y-6">
+             {activeTab === 1 && <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
@@ -375,6 +377,24 @@ const ClientDetail: React.FC = () => {
                         Budget
                       </h3>
                       <p className="text-base">{clientData.budget}</p>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                        Véhicule
+                      </h3>
+                      <p className="text-base">{clientData.vehicle}</p>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                        Couleur du Véhicule
+                      </h3>
+                      <p className="text-base">{clientData.vehicleColor}</p>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                        KM Max
+                      </h3>
+                      <p className="text-base">{clientData.maxKm}</p>
                     </div>
                   </div>
                   <div>
@@ -415,16 +435,7 @@ const ClientDetail: React.FC = () => {
                         </div>)}
                     </div>
                   </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-                      Liens de Recherche
-                    </h3>
-                    <div className="flex flex-wrap gap-2">
-                      {searchLinks.map(link => <a key={link.id} href={link.url} className="inline-flex items-center px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-md text-sm hover:bg-blue-200 dark:hover:bg-blue-800">
-                          {link.name}
-                        </a>)}
-                    </div>
-                  </div>
+
                 </div>}
               {/* Étape 2: Sélection Client */}
               {activeTab === 2 && <div className="space-y-6">
