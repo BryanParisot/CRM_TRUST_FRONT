@@ -21,6 +21,7 @@ interface ClientData {
   budget: string;
   description: string;
   timeline: TimelineEvent[];
+  deliveryOption?: string; // Nouveau champ pour l'option de livraison
 }
 
 interface Vehicle {
@@ -49,6 +50,7 @@ const ClientInfoTab: React.FC<ClientInfoTabProps> = ({ clientData, vehicleOption
         { label: 'Véhicule', value: clientData.vehicle },
         { label: 'Couleur du Véhicule', value: clientData.vehicleColor },
         { label: 'KM Max', value: clientData.maxKm },
+        { label: 'Option de livraison', value: clientData.deliveryOption || 'Non spécifié' }, // Nouveau champ
       ].map(item => (
         <div key={item.label}>
           <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">

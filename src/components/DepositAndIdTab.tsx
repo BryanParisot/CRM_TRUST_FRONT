@@ -17,14 +17,14 @@ const DepositAndIdTab: React.FC<DepositAndIdTabProps> = ({
   <div className="space-y-6">
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div className="border rounded-lg p-4 border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-medium mb-4">Paiement de l'Acompte (30%)</h3>
+        <h3 className="text-lg font-medium mb-4">Paiement de l'Acompte (30%) formule import export</h3>
         <div className="space-y-4">
           <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-md">
             <p className="text-sm mb-2">Montant total estimé:</p>
-            <p className="text-xl font-bold">€42,500</p>
+            <p className="text-xl font-bold">1500 €</p>
             <p className="text-sm mb-2 mt-4">Acompte à payer (30%):</p>
             <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
-              €12,750
+              450 €
             </p>
           </div>
           <div className="flex items-center">

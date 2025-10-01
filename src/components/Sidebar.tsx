@@ -1,5 +1,5 @@
 import React from 'react';
-import { PencilIcon, ArchiveIcon, BellIcon, ClockIcon } from 'lucide-react';
+import { PencilIcon, ArchiveIcon, BellIcon, ClockIcon, Paperclip } from 'lucide-react';
 
 interface TimelineEvent {
   id: string;
@@ -35,6 +35,7 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => (
       </h3>
       <div className="space-y-2">
         {[
+          { label: 'Générer et envoyer le lien', icon: Paperclip },
           { label: 'Modifier Client', icon: PencilIcon },
           { label: 'Archiver Client', icon: ArchiveIcon },
           { label: 'Envoyer Notification', icon: BellIcon },

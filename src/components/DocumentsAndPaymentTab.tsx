@@ -40,10 +40,9 @@ const DocumentsAndPaymentTab: React.FC<DocumentsAndPaymentTabProps> = ({
         <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
           <div className="space-y-3">
             {[
-              { label: 'Prix du véhicule', value: '€42,500' },
-              { label: 'Acompte déjà payé', value: '-€12,750' },
-              { label: "Frais d'importation", value: '€3,200' },
-              { label: "Frais d'immatriculation", value: '€850' },
+              { label: 'Acompte déjà payé', value: '450 €' },
+              { label: "Frais d'importation", value: '1,200 €' },
+              { label: "Formule import export", value: '1,050 €' },
             ].map(item => (
               <div key={item.label} className="flex justify-between">
                 <span className="text-gray-600 dark:text-gray-400">{item.label}</span>
@@ -52,7 +51,7 @@ const DocumentsAndPaymentTab: React.FC<DocumentsAndPaymentTabProps> = ({
             ))}
             <div className="border-t dark:border-gray-600 pt-2 mt-2 flex justify-between">
               <span className="font-medium">Montant restant à payer</span>
-              <span className="font-bold text-lg">€33,800</span>
+              <span className="font-bold text-lg">2,700 €</span>
             </div>
           </div>
           <div className="mt-4">
