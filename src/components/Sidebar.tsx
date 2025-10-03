@@ -1,4 +1,4 @@
-import { ArchiveIcon, BellIcon, CarIcon, ClockIcon, Paperclip, PencilIcon } from 'lucide-react';
+import { ArchiveIcon, BellIcon, CarIcon, ClockIcon, Paperclip, PencilIcon, XIcon } from 'lucide-react';
 import React from 'react';
 
 interface TimelineEvent {
@@ -36,7 +36,6 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
-  // Fake data pour test
   const selectedVehicles: Vehicle[] = [
     {
       id: '1',
@@ -56,7 +55,7 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
 
   return (
     <div className="space-y-6">
-      
+
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
         <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">
           Actions
@@ -87,8 +86,15 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
           {selectedVehicles.map(vehicle => (
             <div
               key={vehicle.id}
-              className="flex items-center space-x-3 border border-gray-200 dark:border-gray-700 rounded-lg p-2"
+              className="group relative flex items-center space-x-3 border border-gray-200 dark:border-gray-700 rounded-lg p-2 hover:shadow-md transition"
             >
+              <button
+                //onClick={() => handleRemoveVehicle(vehicle.id)} // fonction de suppression
+                className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+              >
+                <XIcon className="w-3 h-3" />
+              </button>
+
               <img
                 src={vehicle.image}
                 alt={vehicle.name}
@@ -104,6 +110,7 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
           ))}
         </div>
       </div>
+
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
         <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">
