@@ -1,5 +1,5 @@
 import React from 'react';
-import { EuroIcon, GaugeIcon, CalendarIcon } from 'lucide-react';
+import VehicleCard from './VehicleCard.tsx';
 
 interface TimelineEvent {
   id: string;
@@ -31,6 +31,7 @@ interface Vehicle {
   mileage: number;
   year: number;
   image: string;
+  link: string;
 }
 
 interface ClientInfoTabProps {
@@ -72,38 +73,18 @@ const ClientInfoTab: React.FC<ClientInfoTabProps> = ({ clientData, vehicleOption
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {vehicleOptions.map(vehicle => (
-          <div
+          <VehicleCard
             key={vehicle.id}
-            className="border rounded-lg overflow-hidden border-gray-200 dark:border-gray-700"
-          >
-            <img
-              src={vehicle.image}
-              alt={vehicle.name}
-              className="w-full h-32 object-cover"
-            />
-            <div className="p-4">
-              <h3 className="font-medium">{vehicle.name}</h3>
-              <div className="mt-2 space-y-1 text-sm text-gray-600 dark:text-gray-400">
-                <div className="flex items-center">
-                  <EuroIcon className="w-3.5 h-3.5 mr-1 text-blue-500" />
-                  {vehicle.price}
-                </div>
-                <div className="flex items-center">
-                  <GaugeIcon className="w-3.5 h-3.5 mr-1 text-green-500" />
-                  {formatMileage(vehicle.mileage)} km
-                </div>
-                <div className="flex items-center">
-                  <CalendarIcon className="w-3.5 h-3.5 mr-1 text-purple-500" />
-                  {vehicle.year}
-                </div>
-              </div>
-              <div className="mt-3 flex justify-end">
-                <button className="px-3 py-1 bg-blue-600 text-white rounded-md text-xs hover:bg-blue-700">
-                  Présélectionner
-                </button>
-              </div>
-            </div>
-          </div>
+            id={vehicle.id}
+            name={vehicle.name}
+            price={vehicle.price}
+            mileage={vehicle.mileage}
+            year={vehicle.year}
+            image={vehicle.image}
+            link={vehicle.link}
+            formatMileage={formatMileage}
+            onSelect={() => console.log("Véhicule présélectionné :", vehicle.id)}
+          />
         ))}
       </div>
     </div>
