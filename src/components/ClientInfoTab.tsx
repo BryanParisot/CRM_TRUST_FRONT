@@ -15,8 +15,8 @@ interface ClientData {
   email: string;
   phone: string;
   vehicle: string;
-  maxKm: string;
-  vehicleColor: string;
+  max_km: string;
+  vehicle_color: string;
   step: number;
   progress: number;
   budget: string;
@@ -52,8 +52,8 @@ const ClientInfoTab: React.FC<ClientInfoTabProps> = ({
     { label: "Téléphone", value: clientData.phone, icon: PhoneIcon },
     { label: "Budget", value: clientData.budget, icon: WalletIcon },
     { label: "Véhicule", value: clientData.vehicle, icon: CarIcon },
-    { label: "Couleur du Véhicule", value: clientData.vehicleColor, icon: PaletteIcon },
-    { label: "KM Max", value: clientData.maxKm, icon: GaugeIcon },
+    { label: "Couleur du Véhicule", value: clientData.vehicle_color, icon: PaletteIcon },
+    { label: "KM Max", value: clientData.max_km, icon: GaugeIcon },
     { label: "Option de livraison", value: clientData.deliveryOption || "Non spécifié", icon: TruckIcon },
   ];
 

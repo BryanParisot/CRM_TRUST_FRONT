@@ -1,19 +1,18 @@
-import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
-import ClientHeader from '../components/ClientHeader';
-import TabsNavigation from '../components/TabsNavigation';
-import ClientInfoTab from '../components/ClientInfoTab';
-import ClientSelectionTab from '../components/ClientSelectionTab';
-import DepositAndIdTab from '../components/DepositAndIdTab';
-import GarageChecklistTab from '../components/GarageChecklistTab';
-import DocumentsAndPaymentTab from '../components/DocumentsAndPaymentTab';
-import DeliveryTab from '../components/DeliveryTab';
-import Sidebar from '../components/Sidebar';
-import VehicleChecklistCard from '../components/VehicleChecklistCard';
-import VehicleChecklistModal from '../components/VehicleChecklistModal';
-import Breadcrumb from '../components/Breadcrumb';
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import Breadcrumb from "../components/Breadcrumb";
+import ClientHeader from "../components/ClientHeader";
+import ClientInfoTab from "../components/ClientInfoTab";
+import ClientSelectionTab from "../components/ClientSelectionTab";
+import DeliveryTab from "../components/DeliveryTab";
+import DepositAndIdTab from "../components/DepositAndIdTab";
+import DocumentsAndPaymentTab from "../components/DocumentsAndPaymentTab";
+import GarageChecklistTab from "../components/GarageChecklistTab";
+import Sidebar from "../components/Sidebar";
+import TabsNavigation from "../components/TabsNavigation";
+import VehicleChecklistModal from "../components/VehicleChecklistModal";
 
-// Define interfaces for data structures
+// --- Interfaces ---
 interface TimelineEvent {
   id: string;
   title: string;
@@ -27,8 +26,8 @@ interface ClientData {
   email: string;
   phone: string;
   vehicle: string;
-  maxKm: string;
-  vehicleColor: string;
+  max_km: string;
+  vehicle_color: string;
   step: number;
   progress: number;
   budget: string;
@@ -48,7 +47,7 @@ interface Vehicle {
 interface ChecklistItem {
   id: string;
   name: string;
-  status: 'validated' | 'pending' | 'issue';
+  status: "validated" | "pending" | "issue";
   comment?: string;
 }
 
@@ -62,181 +61,178 @@ interface VehicleChecklist {
   checklistItems: ChecklistItem[];
 }
 
-// Mock data
-const clientData: ClientData = {
-  id: 'client-4',
-  name: 'Sarah Williams',
-  email: 'sarah.williams@example.com',
-  phone: '+33 6 12 34 56 78',
-  vehicle: 'BMW X3',
-  maxKm: '122 000',
-  vehicleColor: 'Rouge',
-  step: 2,
-  progress: 60,
-  budget: '€35,000',
-  description: 'Looking for a family SUV with good safety features and comfort.',
-  timeline: [
-    { id: 'event-1', title: 'Client ajouté au système', date: '2023-09-10', time: '09:15' },
-    { id: 'event-2', title: 'Étape 1 terminée', date: '2023-09-12', time: '14:30' },
-    { id: 'event-3', title: "Passage à l'Étape 2", date: '2023-09-12', time: '14:35' },
-  ],
-};
-
-const vehicleOptions: Vehicle[] = [
-  {
-    id: 'vehicle-1',
-    name: 'BMW X3 xDrive30i',
-    price: '€42,500',
-    mileage: 25000,
-    year: 2021,
-    image: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-  },
-  {
-    id: 'vehicle-2',
-    name: 'BMW X3 M40i',
-    price: '€59,800',
-    mileage: 18000,
-    year: 2022,
-    image: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-  },
-  {
-    id: 'vehicle-3',
-    name: 'BMW X3 sDrive20i',
-    price: '€38,200',
-    mileage: 32000,
-    year: 2020,
-    image: 'https://images.unsplash.com/photo-1502877338535-766e1452684a?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-  },
-];
-
+// --- Données fictives pour le checklist garage ---
 const vehicleChecklistData: VehicleChecklist[] = [
   {
-    id: 'vehicle-1',
-    name: 'BMW X3 xDrive30i',
-    price: '€42,500',
+    id: "vehicle-1",
+    name: "BMW X3 xDrive30i",
+    price: "€42,500",
     mileage: 25000,
     year: 2021,
-    image: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+    image:
+      "https://images.unsplash.com/photo-1580273916550-e323be2ae537?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80",
     checklistItems: [
-      { id: 'check-1-1', name: 'Kilométrage certifié', status: 'validated' },
-      { id: 'check-1-2', name: 'Vidange à jour', status: 'validated' },
-      { id: 'check-1-3', name: 'Distribution vérifiée', status: 'validated' },
-      { id: 'check-1-4', name: 'CarVertical ajouté', status: 'validated' },
-      { id: 'check-1-5', name: 'Contrôle technique à jour', status: 'validated' },
-      { id: 'check-1-6', name: 'Freins vérifiés', status: 'validated' },
-      { id: 'check-1-7', name: 'Pneus vérifiés', status: 'validated' },
-      { id: 'check-1-8', name: 'Climatisation fonctionnelle', status: 'validated' },
-      { id: 'check-1-9', name: 'Batterie testée', status: 'validated' },
-    ],
-  },
-  {
-    id: 'vehicle-2',
-    name: 'BMW X3 M40i',
-    price: '€59,800',
-    mileage: 18000,
-    year: 2022,
-    image: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-    checklistItems: [
-      { id: 'check-2-1', name: 'Kilométrage certifié', status: 'validated' },
-      { id: 'check-2-2', name: 'Vidange à jour', status: 'validated' },
-      { id: 'check-2-3', name: 'Distribution vérifiée', status: 'pending', comment: 'À faire avant livraison' },
-      { id: 'check-2-4', name: 'CarVertical ajouté', status: 'validated' },
-      { id: 'check-2-5', name: 'Contrôle technique à jour', status: 'validated' },
-      { id: 'check-2-6', name: 'Freins vérifiés', status: 'issue', comment: 'Plaquettes à remplacer' },
-      { id: 'check-2-7', name: 'Pneus vérifiés', status: 'validated' },
-      { id: 'check-2-8', name: 'Climatisation fonctionnelle', status: 'validated' },
-    ],
-  },
-  {
-    id: 'vehicle-3',
-    name: 'BMW X3 sDrive20i',
-    price: '€38,200',
-    mileage: 32000,
-    year: 2020,
-    image: 'https://images.unsplash.com/photo-1502877338535-766e1452684a?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-    checklistItems: [
-      { id: 'check-3-1', name: 'Kilométrage certifié', status: 'validated' },
-      { id: 'check-3-2', name: 'Vidange à jour', status: 'validated' },
-      { id: 'check-3-3', name: 'Distribution vérifiée', status: 'pending' },
-      { id: 'check-3-4', name: 'CarVertical ajouté', status: 'pending' },
-      { id: 'check-3-5', name: 'Contrôle technique à jour', status: 'validated' },
-      { id: 'check-3-6', name: 'Freins vérifiés', status: 'validated' },
-      { id: 'check-3-7', name: 'Pneus vérifiés', status: 'validated' },
-      { id: 'check-3-8', name: 'Climatisation fonctionnelle', status: 'issue', comment: 'Recharge nécessaire' },
+      { id: "check-1-1", name: "Kilométrage certifié", status: "validated" },
+      { id: "check-1-2", name: "Vidange à jour", status: "validated" },
+      { id: "check-1-3", name: "Distribution vérifiée", status: "validated" },
+      { id: "check-1-4", name: "CarVertical ajouté", status: "validated" },
+      { id: "check-1-5", name: "Contrôle technique à jour", status: "validated" },
+      { id: "check-1-6", name: "Freins vérifiés", status: "validated" },
+      { id: "check-1-7", name: "Pneus vérifiés", status: "validated" },
+      { id: "check-1-8", name: "Climatisation fonctionnelle", status: "validated" },
+      { id: "check-1-9", name: "Batterie testée", status: "validated" },
     ],
   },
 ];
 
+// --- Composant principal ---
 const ClientDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState<number>(1);
   const [selectedVehicles, setSelectedVehicles] = useState<string[]>([]);
   const [depositPaid, setDepositPaid] = useState<boolean>(false);
   const [idCardSent, setIdCardSent] = useState<boolean>(false);
-  const [vehiclesChecklist, setVehiclesChecklist] = useState<VehicleChecklist[]>(vehicleChecklistData);
+  const [vehiclesChecklist, setVehiclesChecklist] =
+    useState<VehicleChecklist[]>(vehicleChecklistData);
   const [finalPaymentDone, setFinalPaymentDone] = useState<boolean>(false);
-  const [selectedChecklistVehicle, setSelectedChecklistVehicle] = useState<string | null>(null);
+  const [selectedChecklistVehicle, setSelectedChecklistVehicle] = useState<
+    string | null
+  >(null);
+  const [clientData, setClientData] = useState<ClientData | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [vehicleOptions, setVehicleOptions] = useState<Vehicle[]>([]);
 
-  const handleVehicleSelection = (vehicleId: string) => {
-    if (selectedVehicles.includes(vehicleId)) {
-      setSelectedVehicles(selectedVehicles.filter(id => id !== vehicleId));
-    } else {
-      if (selectedVehicles.length < 3) {
-        setSelectedVehicles([...selectedVehicles, vehicleId]);
+  // --- Chargement du client ---
+  useEffect(() => {
+    const fetchClient = async () => {
+      try {
+        const response = await fetch(`http://localhost:3000/api/clients/${id}`);
+        if (!response.ok) throw new Error("Erreur lors du chargement du client");
+        const data = await response.json();
+
+        if (typeof data.timeline === "string") {
+          data.timeline = JSON.parse(data.timeline);
+        } else if (!data.timeline) {
+          data.timeline = [];
+        }
+
+        setClientData(data);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
       }
-    }
+    };
+
+    fetchClient();
+  }, [id]);
+
+  // --- Chargement des véhicules selon le profil client ---
+  useEffect(() => {
+    if (!clientData) return;
+
+    const fetchVehicles = async () => {
+      try {
+        const response = await fetch("http://localhost:3000/api/scrape", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            vehicle: clientData.vehicle,
+            budget: clientData.budget,
+            maxKm: clientData.max_km,
+            vehicleColor: clientData.vehicle_color,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Erreur serveur: " + response.status);
+        }
+
+        const data = await response.json();
+        setVehicleOptions(data);
+      } catch (error) {
+        console.error("Erreur fetch véhicules:", error);
+      }
+    };
+
+    fetchVehicles();
+  }, [clientData]);
+
+  // --- Gestion sélection véhicules ---
+  const handleVehicleSelection = (vehicleId: string) => {
+    setSelectedVehicles((prev) =>
+      prev.includes(vehicleId)
+        ? prev.filter((id) => id !== vehicleId)
+        : prev.length < 3
+          ? [...prev, vehicleId]
+          : prev
+    );
   };
 
+  // --- Gestion du modal checklist véhicule ---
   const handleOpenVehicleChecklist = (vehicleId: string) => {
     setSelectedChecklistVehicle(vehicleId);
   };
-
   const handleCloseVehicleChecklist = () => {
     setSelectedChecklistVehicle(null);
   };
 
+  // --- Màj statut et commentaires checklist ---
   const handleChecklistStatusUpdate = (
     vehicleId: string,
     itemId: string,
-    status: 'validated' | 'pending' | 'issue'
+    status: "validated" | "pending" | "issue"
   ) => {
-    setVehiclesChecklist(prev =>
-      prev.map(vehicle =>
+    setVehiclesChecklist((prev) =>
+      prev.map((vehicle) =>
         vehicle.id === vehicleId
           ? {
-              ...vehicle,
-              checklistItems: vehicle.checklistItems.map(item =>
-                item.id === itemId ? { ...item, status } : item
-              ),
-            }
+            ...vehicle,
+            checklistItems: vehicle.checklistItems.map((item) =>
+              item.id === itemId ? { ...item, status } : item
+            ),
+          }
           : vehicle
       )
     );
   };
 
-  const handleChecklistCommentUpdate = (vehicleId: string, itemId: string, comment: string) => {
-    setVehiclesChecklist(prev =>
-      prev.map(vehicle =>
+  const handleChecklistCommentUpdate = (
+    vehicleId: string,
+    itemId: string,
+    comment: string
+  ) => {
+    setVehiclesChecklist((prev) =>
+      prev.map((vehicle) =>
         vehicle.id === vehicleId
           ? {
-              ...vehicle,
-              checklistItems: vehicle.checklistItems.map(item =>
-                item.id === itemId ? { ...item, comment } : item
-              ),
-            }
+            ...vehicle,
+            checklistItems: vehicle.checklistItems.map((item) =>
+              item.id === itemId ? { ...item, comment } : item
+            ),
+          }
           : vehicle
       )
     );
   };
 
-  const formatMileage = (mileage: number): string => {
-    return mileage.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-  };
+  // --- Format kilométrage ---
+  const formatMileage = (mileage: number): string =>
+    mileage.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
   const selectedVehicle = selectedChecklistVehicle
-    ? vehiclesChecklist.find(v => v.id === selectedChecklistVehicle)
+    ? vehiclesChecklist.find((v) => v.id === selectedChecklistVehicle)
     : null;
 
+  // --- États d’affichage ---
+  if (loading) return <p className="text-center text-gray-500">Chargement du client...</p>;
+  if (error) return <p className="text-center text-red-500">{error}</p>;
+  if (!clientData) return <p className="text-center">Aucun client trouvé</p>;
+
+  // --- Rendu principal ---
   return (
     <div className="space-y-6">
       <Breadcrumb clientId={id} clientName={clientData.name} />
@@ -250,7 +246,7 @@ const ClientDetail: React.FC = () => {
                 <ClientInfoTab
                   clientData={clientData}
                   vehicleOptions={vehicleOptions}
-                  formatMileage={formatMileage}
+                  formatMileage={(n) => n.toString()}
                 />
               )}
               {activeTab === 2 && (
@@ -287,6 +283,7 @@ const ClientDetail: React.FC = () => {
         </div>
         <Sidebar clientData={clientData} />
       </div>
+
       {selectedVehicle && (
         <VehicleChecklistModal
           isOpen={!!selectedChecklistVehicle}
