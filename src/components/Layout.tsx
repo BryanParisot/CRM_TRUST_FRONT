@@ -27,7 +27,7 @@ const Layout: React.FC<LayoutProps> = ({
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && <div className="fixed inset-0 z-20 bg-black bg-opacity-50 lg:hidden" onClick={closeSidebar}></div>}
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-30 w-64 transform bg-white dark:bg-gray-800 shadow-lg transition-transform duration-300 lg:translate-x-0 lg:static lg:inset-auto ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed inset-y-0 left-0 z-30 w-54 transform bg-white dark:bg-gray-800 shadow-lg transition-transform duration-300 lg:translate-x-0 lg:static lg:inset-auto ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex items-center justify-between h-16 px-6 border-b dark:border-gray-700">
           <div className="flex items-center">
             <span className="text-xl font-semibold text-blue-600 dark:text-blue-400">
@@ -38,7 +38,7 @@ const Layout: React.FC<LayoutProps> = ({
             <XIcon className="w-6 h-6" />
           </button>
         </div>
-        <nav className="px-4 py-4">
+        <nav className="px-4 py-4 text-sm">
           <ul className="space-y-1">
             <li>
               <Link to="/" className={`flex items-center px-4 py-3 rounded-md transition-colors ${isActive('/') ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`} onClick={closeSidebar}>
