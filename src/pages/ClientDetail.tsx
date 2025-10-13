@@ -25,9 +25,12 @@ interface ClientData {
   name: string;
   email: string;
   phone: string;
-  vehicle: string;
+  marque: string;
+  modele: string;
   max_km: string;
-  vehicle_color: string;
+  couleur: string;
+  carburant: string;
+  puissance_min: number;
   step: number;
   progress: number;
   budget: string;
@@ -61,7 +64,6 @@ interface VehicleChecklist {
   checklistItems: ChecklistItem[];
 }
 
-// --- Données fictives pour le checklist garage ---
 const vehicleChecklistData: VehicleChecklist[] = [
   {
     id: "vehicle-1",
@@ -140,10 +142,12 @@ const ClientDetail: React.FC = () => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            vehicle: clientData.vehicle,
-            budget: clientData.budget,
-            maxKm: clientData.max_km,
-            vehicleColor: clientData.vehicle_color,
+          marque: clientData.marque,    
+          modele: clientData.modele,             
+          budget: clientData.budget,
+          maxKm: clientData.max_km,
+          couleur: clientData.couleur,
+          puissance_min: clientData.puissance_min
           }),
         });
 
@@ -237,7 +241,7 @@ const ClientDetail: React.FC = () => {
     <div className="space-y-6">
       <Breadcrumb clientId={id} clientName={clientData.name} />
       <ClientHeader clientData={clientData} />
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <div className="lg:col-span-2">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
             <TabsNavigation activeTab={activeTab} setActiveTab={setActiveTab} />

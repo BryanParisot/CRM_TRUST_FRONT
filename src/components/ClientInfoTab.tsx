@@ -9,6 +9,8 @@ import {
   PaletteIcon,
   WalletIcon,
   TruckIcon,
+  FuelIcon,
+  PowerCircle,
 } from "lucide-react";
 
 interface TimelineEvent {
@@ -20,12 +22,15 @@ interface TimelineEvent {
 
 interface ClientData {
   id: string;
-  title: string;
+  name: string;
   email: string;
   phone: string;
-  vehicle: string;
+  marque: string;
+  modele: string;
   max_km: string;
-  vehicle_color: string;
+  couleur: string;
+  carburant: string;
+  puissance_min: number;
   step: number;
   progress: number;
   budget: string;
@@ -56,14 +61,17 @@ const ClientInfoTab: React.FC<ClientInfoTabProps> = ({
   formatMileage,
 }) => {
   const clientInfos = [
-    { label: "Nom Complet", value: clientData.title, icon: UserIcon },
+    { label: "Nom Complet", value: clientData.name, icon: UserIcon },
     { label: "Email", value: clientData.email, icon: MailIcon },
     { label: "Téléphone", value: clientData.phone, icon: PhoneIcon },
     { label: "Budget", value: clientData.budget, icon: WalletIcon },
-    { label: "Véhicule", value: clientData.vehicle, icon: CarIcon },
+    { label: "Marque", value: clientData.marque, icon: CarIcon },
+    { label: "Modele", value: clientData.modele, icon: CarIcon },
+    { label: "Carburant", value: clientData.carburant, icon: FuelIcon },
+    { label: "Puissance", value: clientData.puissance_min, icon: PowerCircle },
     {
       label: "Couleur du Véhicule",
-      value: clientData.vehicle_color,
+      value: clientData.couleur,
       icon: PaletteIcon,
     },
     { label: "KM Max", value: clientData.max_km, icon: GaugeIcon },
@@ -111,27 +119,27 @@ const ClientInfoTab: React.FC<ClientInfoTabProps> = ({
         <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">
           Présélection Véhicules par l'Administration
         </h3>
-<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
-  {vehicleOptions.map((vehicle) => (
-    <VehicleCard
-      key={vehicle.id}
-      id={vehicle.id}
-      title={vehicle.title}
-      price={vehicle.price}
-      mileage={vehicle.mileage}
-      year={vehicle.year}
-      image={vehicle.image}
-      link={vehicle.link}
-      fuel={vehicle.fuel}           
-      gearbox={vehicle.gearbox}     
-      power={vehicle.power}        
-      formatMileage={formatMileage}
-      onSelect={() =>
-        console.log("Véhicule présélectionné :", vehicle.id)
-      }
-    />
-  ))}
-</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
+          {vehicleOptions.map((vehicle) => (
+            <VehicleCard
+              key={vehicle.id}
+              id={vehicle.id}
+              title={vehicle.title}
+              price={vehicle.price}
+              mileage={vehicle.mileage}
+              year={vehicle.year}
+              image={vehicle.image}
+              link={vehicle.link}
+              fuel={vehicle.fuel}           
+              gearbox={vehicle.gearbox}     
+              power={vehicle.power}        
+              formatMileage={formatMileage}
+              onSelect={() =>
+                console.log("Véhicule présélectionné :", vehicle.id)
+              }
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
