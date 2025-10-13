@@ -1,5 +1,5 @@
 import React from "react";
-import { EuroIcon, GaugeIcon, CalendarIcon, ExternalLink, CogIcon, ZapIcon, FuelIcon } from "lucide-react";
+import { EuroIcon, GaugeIcon, ExternalLink, CogIcon, ZapIcon, FuelIcon } from "lucide-react";
 
 interface VehicleCardProps {
   id: string;
