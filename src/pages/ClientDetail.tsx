@@ -30,6 +30,7 @@ interface ClientData {
   max_km: string;
   couleur: string;
   carburant: string;
+  boite: string;
   puissance_min: number;
   step: number;
   progress: number;
@@ -147,7 +148,8 @@ const ClientDetail: React.FC = () => {
           budget: clientData.budget,
           maxKm: clientData.max_km,
           couleur: clientData.couleur,
-          puissance_min: clientData.puissance_min
+          puissance_min: clientData.puissance_min,
+          boite: clientData.boite
           }),
         });
 

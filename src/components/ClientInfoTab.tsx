@@ -11,6 +11,7 @@ import {
   TruckIcon,
   FuelIcon,
   PowerCircle,
+  Tractor,
 } from "lucide-react";
 
 interface TimelineEvent {
@@ -30,6 +31,7 @@ interface ClientData {
   max_km: string;
   couleur: string;
   carburant: string;
+  boite: string;
   puissance_min: number;
   step: number;
   progress: number;
@@ -69,6 +71,7 @@ const ClientInfoTab: React.FC<ClientInfoTabProps> = ({
     { label: "Modele", value: clientData.modele, icon: CarIcon },
     { label: "Carburant", value: clientData.carburant, icon: FuelIcon },
     { label: "Puissance", value: clientData.puissance_min, icon: PowerCircle },
+    { label: "Boite", value: clientData.boite, icon: Tractor },
     {
       label: "Couleur du Véhicule",
       value: clientData.couleur,
@@ -85,18 +88,18 @@ const ClientInfoTab: React.FC<ClientInfoTabProps> = ({
   return (
     <div className="space-y-8">
       {/* Infos Client */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {clientInfos.map((item) => (
           <div
             key={item.label}
-            className="flex items-start p-4 bg-white dark:bg-gray-800 rounded-xl shadow hover:shadow-md transition-shadow"
+            className="flex items-start p-3 bg-white dark:bg-gray-800 rounded-xl shadow hover:shadow-md transition-shadow"
           >
             <item.icon className="w-5 h-5 text-blue-600 mt-1 mr-3" />
             <div>
-              <h3 className="text-xs uppercase tracking-wide font-medium text-gray-500 dark:text-gray-400">
+              <h3 className="text-xs tracking-wide font-medium text-gray-500 dark:text-gray-400">
                 {item.label}
               </h3>
-              <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+              <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
                 {item.value}
               </p>
             </div>
