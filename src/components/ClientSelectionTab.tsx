@@ -1,5 +1,5 @@
 import React from 'react';
-import { EuroIcon, GaugeIcon, CalendarIcon } from 'lucide-react';
+import { EuroIcon, GaugeIcon, CalendarIcon, FuelIcon, PowerCircleIcon, ZapIcon, CogIcon } from 'lucide-react';
 
 interface Vehicle {
   id: string;
@@ -30,62 +30,81 @@ const ClientSelectionTab: React.FC<ClientSelectionTabProps> = ({
         Veuillez sélectionner jusqu'à 3 véhicules qui vous intéressent.
       </p>
     </div>
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {vehicleOptions.map(vehicle => (
-        <div
-          key={vehicle.id}
-          className={`border rounded-lg overflow-hidden ${
-            selectedVehicles.includes(vehicle.id)
-              ? 'ring-2 ring-blue-500 border-blue-500'
-              : 'border-gray-200 dark:border-gray-700'
-          }`}
-        >
-          <img
-            src={vehicle.image}
-            alt={vehicle.name}
-            className="w-full h-32 object-cover"
-          />
-          <div className="p-4">
-            <h3 className="font-medium">{vehicle.name}</h3>
-            <div className="mt-2 space-y-1 text-sm text-gray-600 dark:text-gray-400">
-              <div className="flex items-center">
-                <EuroIcon className="w-3.5 h-3.5 mr-1 text-blue-500" />
-                {vehicle.price}
-              </div>
-              <div className="flex items-center">
-                <GaugeIcon className="w-3.5 h-3.5 mr-1 text-green-500" />
-                {formatMileage(vehicle.mileage)} km
-              </div>
-              <div className="flex items-center">
-                <CalendarIcon className="w-3.5 h-3.5 mr-1 text-purple-500" />
-                {vehicle.year}
-              </div>
-            </div>
-            <div className="mt-3 flex items-center">
-              <input
-                type="checkbox"
-                id={`select-${vehicle.id}`}
-                checked={selectedVehicles.includes(vehicle.id)}
-                onChange={() => handleVehicleSelection(vehicle.id)}
-                disabled={
-                  selectedVehicles.length >= 3 &&
-                  !selectedVehicles.includes(vehicle.id)
-                }
-                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-              />
-              <label
-                htmlFor={`select-${vehicle.id}`}
-                className="ml-2 text-sm text-gray-700 dark:text-gray-300"
-              >
-                {selectedVehicles.includes(vehicle.id)
-                  ? 'Sélectionné'
-                  : 'Sélectionner ce véhicule'}
-              </label>
-            </div>
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+  {vehicleOptions.map(vehicle => (
+    <div
+      key={vehicle.id}
+      title={vehicle.title}
+      className={`relative bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 ${
+        selectedVehicles.includes(vehicle.id)
+          ? 'ring-2 ring-blue-500'
+          : 'border border-gray-200 dark:border-gray-700'
+      }`}
+    >
+      <img
+        src={vehicle.image}
+        alt={vehicle.title}
+        className="w-full h-40 object-cover rounded-t-xl"
+      />
+      <div className="p-5">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          {vehicle.title}
+        </h3>
+        <div className="mt-3 space-y-2 text-sm text-gray-600 dark:text-gray-300">
+          <div className="flex items-center">
+            <GaugeIcon className="w-4 h-4 mr-2 text-green-500" />
+            <span>{formatMileage(vehicle.mileage)} km</span>
+          </div>
+          <div className="flex items-center">
+            <FuelIcon className="w-4 h-4 mr-2 text-green-500" />
+            <span>{formatMileage(vehicle.fuel)}</span>
+          </div>
+          <div className="flex items-center">
+            <ZapIcon className="w-4 h-4 mr-2 text-green-500" />
+            <span>{formatMileage(vehicle.power)}</span>
+          </div>
+          <div className="flex items-center">
+            <CalendarIcon className="w-4 h-4 mr-2 text-purple-500" />
+            <span>{vehicle.year}</span>
+          </div>
+          <div className="flex items-center">
+            <CogIcon className="w-4 h-4 mr-2 text-purple-500" />
+            <span>{vehicle.gearbox}</span>
+          </div>
+          <div className="flex items-center">
+            <a
+              href={vehicle.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-500 hover:text-blue-600 underline text-sm"
+            >
+              Voir les détails
+            </a>
           </div>
         </div>
-      ))}
+        <div className="mt-4 flex items-center">
+          <input
+            type="checkbox"
+            id={`select-${vehicle.id}`}
+            checked={selectedVehicles.includes(vehicle.id)}
+            onChange={() => handleVehicleSelection(vehicle.id)}
+            disabled={
+              selectedVehicles.length >= 3 &&
+              !selectedVehicles.includes(vehicle.id)
+            }
+            className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 transition-colors"
+          />
+          <label
+            htmlFor={`select-${vehicle.id}`}
+            className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-200"
+          >
+            {selectedVehicles.includes(vehicle.id) ? 'Sélectionné' : 'Sélectionner'}
+          </label>
+        </div>
+      </div>
     </div>
+  ))}
+</div>
     <div className="flex justify-between items-center">
       <p className="text-sm text-gray-600 dark:text-gray-400">
         {selectedVehicles.length} sur 3 véhicules sélectionnés

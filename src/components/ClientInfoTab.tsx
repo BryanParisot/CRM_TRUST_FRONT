@@ -12,6 +12,8 @@ import {
   FuelIcon,
   PowerCircle,
   Tractor,
+  CogIcon,
+  ZapIcon,
 } from "lucide-react";
 
 interface TimelineEvent {
@@ -70,8 +72,8 @@ const ClientInfoTab: React.FC<ClientInfoTabProps> = ({
     { label: "Marque", value: clientData.marque, icon: CarIcon },
     { label: "Modele", value: clientData.modele, icon: CarIcon },
     { label: "Carburant", value: clientData.carburant, icon: FuelIcon },
-    { label: "Puissance", value: clientData.puissance_min, icon: PowerCircle },
-    { label: "Boite", value: clientData.boite, icon: Tractor },
+    { label: "Puissance", value: clientData.puissance_min, icon: ZapIcon },
+    { label: "Boite", value: clientData.boite, icon: CogIcon},
     {
       label: "Couleur du Véhicule",
       value: clientData.couleur,

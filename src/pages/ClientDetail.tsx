@@ -105,6 +105,7 @@ const ClientDetail: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [vehicleOptions, setVehicleOptions] = useState<Vehicle[]>([]);
+  const [vehiclePreSelect, setvehiclePreSelect] = useState<Vehicle[]>([]);
 
   // --- Chargement du client ---
   useEffect(() => {
@@ -166,6 +167,31 @@ const ClientDetail: React.FC = () => {
 
     fetchVehicles();
   }, [clientData]);
+
+
+// --- Chargement des véhicules présélectionnés ---
+useEffect(() => {
+  if (!clientData) return;
+
+  const fetchPreselectedVehicles = async () => {
+    try {
+      const response = await fetch(`http://localhost:3000/api/vehicles/client/${clientData.id}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`, // si tu utilises un token
+        },
+      });
+      if (!response.ok) throw new Error("Erreur de récupération des véhicules");
+      const data = await response.json();
+      setvehiclePreSelect(data);
+    } catch (error) {
+      console.error("Erreur fetch preselected:", error);
+    }
+  };
+
+  fetchPreselectedVehicles();
+}, [clientData]);
+
+
 
   // --- Gestion sélection véhicules ---
   const handleVehicleSelection = (vehicleId: string) => {
@@ -257,7 +283,7 @@ const ClientDetail: React.FC = () => {
               )}
               {activeTab === 2 && (
                 <ClientSelectionTab
-                  vehicleOptions={vehicleOptions}
+                  vehicleOptions={vehiclePreSelect}
                   selectedVehicles={selectedVehicles}
                   handleVehicleSelection={handleVehicleSelection}
                   formatMileage={formatMileage}
