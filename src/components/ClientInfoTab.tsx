@@ -1,20 +1,18 @@
-import React from "react";
-import VehicleCard from "./VehicleCard";
 import {
-  UserIcon,
-  MailIcon,
-  PhoneIcon,
   CarIcon,
-  GaugeIcon,
-  PaletteIcon,
-  WalletIcon,
-  TruckIcon,
-  FuelIcon,
-  PowerCircle,
-  Tractor,
   CogIcon,
+  FuelIcon,
+  GaugeIcon,
+  MailIcon,
+  PaletteIcon,
+  PhoneIcon,
+  TruckIcon,
+  UserIcon,
+  WalletIcon,
   ZapIcon,
 } from "lucide-react";
+import React, { useState } from "react";
+import VehicleCard from "./VehicleCard";
 
 interface TimelineEvent {
   id: string;
@@ -45,12 +43,15 @@ interface ClientData {
 
 interface Vehicle {
   id: string;
-  name: string;
+  title: string;
   price: string;
   mileage: number;
   year: number;
   image: string;
   link: string;
+  fuel?: string;
+  gearbox?: string;
+  power?: string;
 }
 
 interface ClientInfoTabProps {
@@ -64,6 +65,10 @@ const ClientInfoTab: React.FC<ClientInfoTabProps> = ({
   vehicleOptions,
   formatMileage,
 }) => {
+  const [selectedVehicles, setSelectedVehicles] = useState<Vehicle[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+
   const clientInfos = [
     { label: "Nom Complet", value: clientData.name, icon: UserIcon },
     { label: "Email", value: clientData.email, icon: MailIcon },
@@ -73,7 +78,7 @@ const ClientInfoTab: React.FC<ClientInfoTabProps> = ({
     { label: "Modele", value: clientData.modele, icon: CarIcon },
     { label: "Carburant", value: clientData.carburant, icon: FuelIcon },
     { label: "Puissance", value: clientData.puissance_min, icon: ZapIcon },
-    { label: "Boite", value: clientData.boite, icon: CogIcon},
+    { label: "Boite", value: clientData.boite, icon: CogIcon },
     {
       label: "Couleur du Véhicule",
       value: clientData.couleur,
@@ -86,6 +91,36 @@ const ClientInfoTab: React.FC<ClientInfoTabProps> = ({
       icon: TruckIcon,
     },
   ];
+
+  // ✅ Fonction pour envoyer les véhicules présélectionnés
+  const handlePreselect = async (vehicle: Vehicle) => {
+    try {
+      setLoading(true);
+      setMessage("");
+
+      const res = await fetch("http://localhost:3000/api/vehicles/preselect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          client_id: clientData.id,
+          vehicles: [vehicle],
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.message || "Erreur serveur");
+
+      setSelectedVehicles((prev) => [...prev, vehicle]);
+      setMessage("✅ Véhicule présélectionné !");
+    } catch (error: any) {
+      console.error("Erreur lors de la présélection :", error);
+      setMessage("❌ Erreur : " + error.message);
+    } finally {
+      setLoading(false);
+      setTimeout(() => setMessage(""), 3000); // efface le message après 3 sec
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -124,6 +159,13 @@ const ClientInfoTab: React.FC<ClientInfoTabProps> = ({
         <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">
           Présélection Véhicules par l'Administration
         </h3>
+
+        {message && (
+          <p className="text-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
+            {message}
+          </p>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
           {vehicleOptions.map((vehicle) => (
             <VehicleCard
@@ -135,16 +177,20 @@ const ClientInfoTab: React.FC<ClientInfoTabProps> = ({
               year={vehicle.year}
               image={vehicle.image}
               link={vehicle.link}
-              fuel={vehicle.fuel}           
-              gearbox={vehicle.gearbox}     
-              power={vehicle.power}        
+              fuel={vehicle.fuel}
+              gearbox={vehicle.gearbox}
+              power={vehicle.power}
               formatMileage={formatMileage}
-              onSelect={() =>
-                console.log("Véhicule présélectionné :", vehicle.id)
-              }
+              onSelect={() => handlePreselect(vehicle)}
             />
           ))}
         </div>
+
+        {loading && (
+          <p className="text-xs text-center text-gray-500 mt-2">
+            Envoi en cours...
+          </p>
+        )}
       </div>
     </div>
   );

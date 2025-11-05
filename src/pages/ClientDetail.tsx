@@ -149,6 +149,7 @@ const ClientDetail: React.FC = () => {
           budget: clientData.budget,
           maxKm: clientData.max_km,
           couleur: clientData.couleur,
+          fuel: clientData.carburant,
           puissance_min: clientData.puissance_min,
           boite: clientData.boite
           }),
