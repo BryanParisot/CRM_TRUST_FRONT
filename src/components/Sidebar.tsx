@@ -8,6 +8,8 @@ import {
   XIcon,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
+import toast from "react-hot-toast";
+import { ClipLoader } from "react-spinners";
 
 interface TimelineEvent {
   id: string;
@@ -29,7 +31,7 @@ interface ClientData {
 }
 
 interface Vehicle {
-  id: string;
+  id: number;
   title: string;
   price: string;
   mileage: string;
@@ -42,10 +44,37 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
   const [selectedVehicles, setSelectedVehicles] = useState<Vehicle[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
+  // ✅ Fonction de suppression
+  const handleRemoveVehicle = async (vehicleId: number) => {
+    try {
+      const response = await fetch(
+        `http://localhost:3000/api/vehicles/${vehicleId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+
+      if (!response.ok) throw new Error("Erreur suppression");
+
+      setSelectedVehicles((prev) => prev.filter((v) => v.id !== vehicleId));
+      toast.success("Véhicule supprimé avec succès 🚗");
+    } catch (error) {
+      toast.error("Erreur lors de la suppression ❌");
+    }
+  };
+
+  // ✅ Chargement initial des véhicules
   useEffect(() => {
+    let isMounted = true;
+
     const fetchPreselectedVehicles = async () => {
       try {
+        setLoading(true);
         const response = await fetch(
           `http://localhost:3000/api/vehicles/client/${clientData.id}`,
           {
@@ -54,15 +83,30 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
             },
           }
         );
+
         if (!response.ok) throw new Error("Erreur serveur");
+
         const data = await response.json();
-        setSelectedVehicles(data);
+        if (isMounted) {
+          setSelectedVehicles(data);
+          setLoading(false); // ✅ FIN DU LOADING
+        }
       } catch (error) {
         console.error("Erreur récupération véhicules:", error);
+        if (isMounted) {
+          toast.error("Erreur lors du chargement des véhicules ❌");
+          setLoading(false);
+        }
       }
     };
 
+    // Appel initial unique
     fetchPreselectedVehicles();
+
+    // ✅ Rafraîchit seulement si le client change
+    return () => {
+      isMounted = false;
+    };
   }, [clientData.id]);
 
   return (
@@ -97,38 +141,43 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
           Véhicules présélectionnés ({selectedVehicles.length})
         </h3>
 
-        <div className="space-y-3">
-          {selectedVehicles.map((vehicle) => (
-            <div
-              key={vehicle.id}
-              className="group relative flex items-center space-x-3 border border-gray-200 dark:border-gray-700 rounded-lg p-2 hover:shadow-md transition"
-            >
-              <button
-                className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+        {loading ? (
+          <div className="flex justify-center py-6">
+            <ClipLoader size={28} color="#2563EB" />
+          </div>
+        ) : selectedVehicles.length > 0 ? (
+          <div className="space-y-3">
+            {selectedVehicles.map((vehicle) => (
+              <div
+                key={vehicle.id}
+                className="group relative flex items-center space-x-3 border border-gray-200 dark:border-gray-700 rounded-lg p-2 hover:shadow-md transition"
               >
-                <XIcon className="w-3 h-3" />
-              </button>
+                <button
+                  onClick={() => handleRemoveVehicle(vehicle.id)}
+                  className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                >
+                  <XIcon className="w-3 h-3" />
+                </button>
 
-              <img
-                src={vehicle.image}
-                alt={vehicle.title}
-                className="w-16 h-12 object-cover rounded-md"
-              />
-              <div className="flex-1">
-                <p className="text-sm font-medium">{vehicle.title}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {vehicle.price} • {vehicle.mileage}
-                </p>
+                <img
+                  src={vehicle.image}
+                  alt={vehicle.title}
+                  className="w-16 h-12 object-cover rounded-md"
+                />
+                <div className="flex-1">
+                  <p className="text-sm font-medium">{vehicle.title}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {vehicle.price} • {vehicle.mileage}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))}
-
-          {selectedVehicles.length === 0 && (
-            <p className="text-xs text-gray-400 text-center">
-              Aucun véhicule présélectionné pour le moment.
-            </p>
-          )}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-gray-400 text-center">
+            Aucun véhicule présélectionné pour le moment.
+          </p>
+        )}
       </div>
 
       {/* === Historique === */}
