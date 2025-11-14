@@ -12,6 +12,8 @@ import {
   ZapIcon,
 } from "lucide-react";
 import React, { useState } from "react";
+import toast from "react-hot-toast";
+import { ClipLoader } from "react-spinners";
 import VehicleCard from "./VehicleCard";
 
 interface TimelineEvent {
@@ -67,7 +69,6 @@ const ClientInfoTab: React.FC<ClientInfoTabProps> = ({
 }) => {
   const [selectedVehicles, setSelectedVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
 
   const clientInfos = [
     { label: "Nom Complet", value: clientData.name, icon: UserIcon },
@@ -92,11 +93,9 @@ const ClientInfoTab: React.FC<ClientInfoTabProps> = ({
     },
   ];
 
-  // ✅ Fonction pour envoyer les véhicules présélectionnés
   const handlePreselect = async (vehicle: Vehicle) => {
     try {
       setLoading(true);
-      setMessage("");
 
       const res = await fetch("http://localhost:3000/api/vehicles/preselect", {
         method: "POST",
@@ -112,18 +111,29 @@ const ClientInfoTab: React.FC<ClientInfoTabProps> = ({
       if (!res.ok) throw new Error(data.message || "Erreur serveur");
 
       setSelectedVehicles((prev) => [...prev, vehicle]);
-      setMessage("✅ Véhicule présélectionné !");
+      toast.success("Véhicule présélectionné avec succès !");
     } catch (error: any) {
       console.error("Erreur lors de la présélection :", error);
-      setMessage("❌ Erreur : " + error.message);
+      toast.error(`Erreur lors de la présélection : ${error.message}`);
     } finally {
       setLoading(false);
-      setTimeout(() => setMessage(""), 3000); // efface le message après 3 sec
     }
   };
 
+
   return (
+
     <div className="space-y-8">
+
+      {loading && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg flex flex-col items-center">
+            <ClipLoader size={35} color="#2563EB" />
+            <p className="mt-3 text-sm text-gray-700 dark:text-gray-200">Envoi en cours...</p>
+          </div>
+        </div>
+      )}
+
       {/* Infos Client */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {clientInfos.map((item) => (
@@ -159,12 +169,6 @@ const ClientInfoTab: React.FC<ClientInfoTabProps> = ({
         <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">
           Présélection Véhicules par l'Administration
         </h3>
-
-        {message && (
-          <p className="text-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
-            {message}
-          </p>
-        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
           {vehicleOptions.map((vehicle) => (

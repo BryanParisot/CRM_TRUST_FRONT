@@ -31,7 +31,6 @@ const Dashboard: React.FC = () => {
       </div>
       {/* Kanban Board */}
       <div className="h-[500px]">
-        <h2 className="text-lg font-semibold mb-3">Pipeline Client</h2>
         <KanbanBoard />
       </div>
       {/* Activity Feed */}
