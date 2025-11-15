@@ -3,17 +3,21 @@ import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import Layout from './components/Layout';
 import { ThemeProvider } from './contexts/ThemeContext';
 import ClientDetail from './pages/ClientDetail';
+import ClientPublicPage from "./pages/ClientPublicPage";
+import ClientSelectionConfirmation from "./pages/ClientSelectionConfirmation";
 import Dashboard from './pages/Dashboard';
 import Login from "./pages/login"; // 👈
 import Metrics from './pages/Metrics';
+
 
 export function App() {
   return (
     <ThemeProvider>
       <Router>
         <Routes>
+          <Route path="/client-link/:token/confirmation" element={<ClientSelectionConfirmation />} />
           <Route path="/login" element={<Login />} />
-
+          <Route path="/client-link/:token" element={<ClientPublicPage />} />
           {/* Protégé par layout */}
           <Route element={<Layout />}>
             <Route path="/" element={<Dashboard />} />

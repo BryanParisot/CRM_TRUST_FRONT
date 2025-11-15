@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+
 import Breadcrumb from "../components/Breadcrumb";
 import ClientHeader from "../components/ClientHeader";
 import ClientInfoTab from "../components/ClientInfoTab";
@@ -91,35 +92,50 @@ const vehicleChecklistData: VehicleChecklist[] = [
 // --- Composant principal ---
 const ClientDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+
   const [activeTab, setActiveTab] = useState<number>(1);
+  const [isReady, setIsReady] = useState(false);
+
   const [selectedVehicles, setSelectedVehicles] = useState<string[]>([]);
   const [depositPaid, setDepositPaid] = useState<boolean>(false);
   const [idCardSent, setIdCardSent] = useState<boolean>(false);
+
   const [vehiclesChecklist, setVehiclesChecklist] =
     useState<VehicleChecklist[]>(vehicleChecklistData);
+
   const [finalPaymentDone, setFinalPaymentDone] = useState<boolean>(false);
-  const [selectedChecklistVehicle, setSelectedChecklistVehicle] = useState<
-    string | null
-  >(null);
+  const [selectedChecklistVehicle, setSelectedChecklistVehicle] =
+    useState<string | null>(null);
+
   const [clientData, setClientData] = useState<ClientData | null>(null);
+
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+
   const [vehicleOptions, setVehicleOptions] = useState<Vehicle[]>([]);
   const [vehiclePreSelect, setvehiclePreSelect] = useState<Vehicle[]>([]);
+  console.log(id);
+  // ========== Sync activeTab avec step stocké en BDD ==========
+  useEffect(() => {
+    if (clientData) {
+      setActiveTab(clientData.step);
+      setIsReady(true);
+    }
+  }, [clientData]);
 
-  // --- Chargement du client ---
+  // ========== Fetch Client ==========
   useEffect(() => {
     const fetchClient = async () => {
       try {
-        const response = await fetch(`http://localhost:3000/api/clients/${id}`);
-        if (!response.ok) throw new Error("Erreur lors du chargement du client");
-        const data = await response.json();
+        const res = await fetch(`http://localhost:3000/api/clients/${id}`);
+        if (!res.ok) throw new Error("Erreur lors du chargement du client");
+
+        const data = await res.json();
 
         if (typeof data.timeline === "string") {
           data.timeline = JSON.parse(data.timeline);
-        } else if (!data.timeline) {
-          data.timeline = [];
         }
+        if (!data.timeline) data.timeline = [];
 
         setClientData(data);
       } catch (err: any) {
@@ -132,34 +148,28 @@ const ClientDetail: React.FC = () => {
     fetchClient();
   }, [id]);
 
-  // --- Chargement des véhicules selon le profil client ---
+  // ========== Fetch véhicules dynamiques ==========
   useEffect(() => {
     if (!clientData) return;
 
     const fetchVehicles = async () => {
       try {
-        const response = await fetch("http://localhost:3000/api/scrape", {
+        const res = await fetch("http://localhost:3000/api/scrape", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-          marque: clientData.marque,    
-          modele: clientData.modele,             
-          budget: clientData.budget,
-          maxKm: clientData.max_km,
-          couleur: clientData.couleur,
-          fuel: clientData.carburant,
-          puissance_min: clientData.puissance_min,
-          boite: clientData.boite
+            marque: clientData.marque,
+            modele: clientData.modele,
+            budget: clientData.budget,
+            maxKm: clientData.max_km,
+            couleur: clientData.couleur,
+            fuel: clientData.carburant,
+            puissance_min: clientData.puissance_min,
+            boite: clientData.boite,
           }),
         });
 
-        if (!response.ok) {
-          throw new Error("Erreur serveur: " + response.status);
-        }
-
-        const data = await response.json();
+        const data = await res.json();
         setVehicleOptions(data);
       } catch (error) {
         console.error("Erreur fetch véhicules:", error);
@@ -170,31 +180,32 @@ const ClientDetail: React.FC = () => {
   }, [clientData]);
 
 
-// --- Chargement des véhicules présélectionnés ---
-useEffect(() => {
-  if (!clientData) return;
+  useEffect(() => {
+    if (!clientData) return;
 
-  const fetchPreselectedVehicles = async () => {
-    try {
-      const response = await fetch(`http://localhost:3000/api/vehicles/client/${clientData.id}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`, // si tu utilises un token
-        },
-      });
-      if (!response.ok) throw new Error("Erreur de récupération des véhicules");
-      const data = await response.json();
-      setvehiclePreSelect(data);
-    } catch (error) {
-      console.error("Erreur fetch preselected:", error);
-    }
-  };
+    const fetchPreselectedVehicles = async () => {
+      try {
+        const res = await fetch(
+          `http://localhost:3000/api/vehicles/client/${id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
 
-  fetchPreselectedVehicles();
-}, [clientData]);
+        const data = await res.json();
+        console.log(data);
+        setvehiclePreSelect(data);
+      } catch (error) {
+        console.error("Erreur fetch preselected:", error);
+      }
+    };
 
+    fetchPreselectedVehicles();
+  }, [clientData]);
 
-
-  // --- Gestion sélection véhicules ---
+  // ========== Sélection véhicules ==========
   const handleVehicleSelection = (vehicleId: string) => {
     setSelectedVehicles((prev) =>
       prev.includes(vehicleId)
@@ -205,15 +216,7 @@ useEffect(() => {
     );
   };
 
-  // --- Gestion du modal checklist véhicule ---
-  const handleOpenVehicleChecklist = (vehicleId: string) => {
-    setSelectedChecklistVehicle(vehicleId);
-  };
-  const handleCloseVehicleChecklist = () => {
-    setSelectedChecklistVehicle(null);
-  };
-
-  // --- Màj statut et commentaires checklist ---
+  // ========== Mise à jour checklists ==========
   const handleChecklistStatusUpdate = (
     vehicleId: string,
     itemId: string,
@@ -252,7 +255,7 @@ useEffect(() => {
     );
   };
 
-  // --- Format kilométrage ---
+  // ========== Utilitaire format ==========  
   const formatMileage = (mileage: number): string =>
     mileage.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
@@ -260,20 +263,24 @@ useEffect(() => {
     ? vehiclesChecklist.find((v) => v.id === selectedChecklistVehicle)
     : null;
 
-  // --- États d’affichage ---
+  // ========== Loading / Error ==========
   if (loading) return <p className="text-center text-gray-500">Chargement du client...</p>;
   if (error) return <p className="text-center text-red-500">{error}</p>;
   if (!clientData) return <p className="text-center">Aucun client trouvé</p>;
+  if (!isReady) return <p className="text-center text-gray-500">Chargement de la fiche...</p>;
 
-  // --- Rendu principal ---
+  // ========== Rendu principal ==========
   return (
     <div className="space-y-6">
       <Breadcrumb clientId={id} clientName={clientData.name} />
+
       <ClientHeader clientData={clientData} />
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <div className="lg:col-span-2">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
             <TabsNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
+
             <div className="p-6">
               {activeTab === 1 && (
                 <ClientInfoTab
@@ -282,6 +289,7 @@ useEffect(() => {
                   formatMileage={(n) => n.toString()}
                 />
               )}
+
               {activeTab === 2 && (
                 <ClientSelectionTab
                   vehicleOptions={vehiclePreSelect}
@@ -290,6 +298,7 @@ useEffect(() => {
                   formatMileage={formatMileage}
                 />
               )}
+
               {activeTab === 3 && (
                 <DepositAndIdTab
                   depositPaid={depositPaid}
@@ -298,29 +307,33 @@ useEffect(() => {
                   setIdCardSent={setIdCardSent}
                 />
               )}
+
               {activeTab === 4 && (
                 <GarageChecklistTab
                   vehiclesChecklist={vehiclesChecklist}
-                  handleOpenVehicleChecklist={handleOpenVehicleChecklist}
+                  handleOpenVehicleChecklist={setSelectedChecklistVehicle}
                 />
               )}
+
               {activeTab === 5 && (
                 <DocumentsAndPaymentTab
                   finalPaymentDone={finalPaymentDone}
                   setFinalPaymentDone={setFinalPaymentDone}
                 />
               )}
+
               {activeTab === 6 && <DeliveryTab />}
             </div>
           </div>
         </div>
+
         <Sidebar clientData={clientData} />
       </div>
 
       {selectedVehicle && (
         <VehicleChecklistModal
           isOpen={!!selectedChecklistVehicle}
-          onClose={handleCloseVehicleChecklist}
+          onClose={() => setSelectedChecklistVehicle(null)}
           vehicleName={selectedVehicle.name}
           vehicleImage={selectedVehicle.image}
           vehicleYear={selectedVehicle.year}

@@ -37,6 +37,7 @@ interface Vehicle {
   price: string;
   mileage: string;
   image: string;
+  selected_by?: string; // IMPORTANT
 }
 
 interface SidebarProps {
@@ -47,8 +48,12 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
   const [selectedVehicles, setSelectedVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [updating, setUpdating] = useState<boolean>(false);
+  const [linkLoading, setLinkLoading] = useState(false);
+  const [generatedLink, setGeneratedLink] = useState<string | null>(null);
 
-  // =============== LOADING PRE-SELECTED VEHICLES ===============
+  // ==========================================
+  // 🔵 LOAD PRE-SELECTED VEHICLES
+  // ==========================================
   useEffect(() => {
     let isMounted = true;
 
@@ -67,13 +72,11 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
         const data = await response.json();
         if (isMounted) {
           setSelectedVehicles(data);
-          setLoading(false);
         }
       } catch (error) {
-        if (isMounted) {
-          toast.error("Erreur de chargement des véhicules ❌");
-          setLoading(false);
-        }
+        toast.error("Erreur de chargement des véhicules ❌");
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -81,7 +84,9 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
     return () => { isMounted = false };
   }, [clientData.id]);
 
-  // =============== DELETE VEHICLE ===============
+  // ==========================================
+  // 🔴 DELETE VEHICLE
+  // ==========================================
   const handleRemoveVehicle = async (vehicleId: number) => {
     try {
       const response = await fetch(
@@ -101,6 +106,62 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
     }
   };
 
+  // ==========================================
+  // 🚫 CONDITIONS BLOQUANTES
+  // ==========================================
+
+  // Aperçu client : au moins un véhicule sélectionné + envoyé au client
+  const noVehicle = selectedVehicles.length === 0;
+
+  // Étape 1 → impossible si aucun véhicule pré-sélectionné
+  const lockStep1 = clientData.step === 1 && noVehicle;
+
+  // Étape 2 → impossible si aucun véhicule sélectionné par le client
+  const clientHasSelected = selectedVehicles.some(v => v.selected_by === "client");
+  const lockStep2 = clientData.step === 2 && !clientHasSelected;
+
+  // ==========================================
+  // 🔗 GENERATE CLIENT LINK
+  // ==========================================
+  const handleGenerateLink = async () => {
+    if (noVehicle) {
+      toast.error("Ajoutez au moins un véhicule avant de générer le lien.");
+      return;
+    }
+
+    try {
+      setLinkLoading(true);
+      const res = await fetch(
+        `http://localhost:3000/api/clients/${clientData.id}/generate-link`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Erreur serveur");
+
+      setGeneratedLink(data.link);
+
+      try {
+        await navigator.clipboard.writeText(data.link);
+        toast.success("Lien généré et copié 📋");
+      } catch {
+        toast.success("Lien généré (copie manuelle requise)");
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Erreur lors de la génération du lien.");
+    } finally {
+      setLinkLoading(false);
+    }
+  };
+
+  // ==========================================
+  // 🔽 DOWNGRADE STEP
+  // ==========================================
   const handleDowngradeStep = async () => {
     if (clientData.step === 1) {
       toast.error("Impossible de descendre en dessous de l’étape 1.");
@@ -123,7 +184,6 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
           body: JSON.stringify({
             to_step: previousStep,
             changed_by: "admin",
-            reason: "Correction d’une erreur",
           }),
         }
       );
@@ -139,14 +199,21 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
     }
   };
 
-
-  // =============== VALIDATE STEP ===============
+  // ==========================================
+  // 🟢 VALIDATE STEP
+  // ==========================================
   const handleValidateStep = async () => {
     const nextStep = clientData.step + 1;
 
-    // 🚫 Étape 1 verrouillée tant qu’il n’y a pas de véhicule
-    if (clientData.step === 1 && selectedVehicles.length === 0) {
-      toast.error("Vous devez présélectionner au moins un véhicule pour valider l'étape.");
+    // Blocage étape 1
+    if (lockStep1) {
+      toast.error("Vous devez présélectionner au moins un véhicule.");
+      return;
+    }
+
+    // Blocage étape 2
+    if (lockStep2) {
+      toast.error("Le client doit sélectionner au moins un véhicule.");
       return;
     }
 
@@ -179,14 +246,13 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
     }
   };
 
-  // Conditions disable button
-  const noVehicle = selectedVehicles.length === 0;
-  const lockStep1 = clientData.step === 1 && noVehicle;
-
+  // ==========================================
+  // 🖼️ RENDER
+  // ==========================================
   return (
     <div className="space-y-6">
 
-      {/* =============== ACTIONS BLOCK =============== */}
+      {/* ACTIONS */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
         <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">
           Actions
@@ -194,41 +260,51 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
 
         <div className="space-y-2">
 
-          {/* Générer lien */}
+          {/* GENERATE LINK */}
           <button
-            disabled={noVehicle}
-            className={`w-full flex items-center justify-center py-2 px-4 border rounded-md transition ${noVehicle
-              ? "text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed"
-              : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+            onClick={handleGenerateLink}
+            disabled={noVehicle || linkLoading}
+            className={`w-full flex items-center justify-center py-2 px-4 border rounded-md transition ${noVehicle || linkLoading
+                ? "text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed"
+                : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
               }`}
           >
-            <Paperclip className="w-4 h-4 mr-2" />
+            {linkLoading ? (
+              <ClipLoader size={16} color="#4B5563" className="mr-2" />
+            ) : (
+              <Paperclip className="w-4 h-4 mr-2" />
+            )}
             Générer et envoyer le lien
           </button>
 
-          {/* Modifier */}
-          <button className="w-full flex items-center justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+          {generatedLink && (
+            <p className="mt-1 text-[11px] text-gray-500 break-all">
+              Lien client : {generatedLink}
+            </p>
+          )}
+
+          {/* MODIFY */}
+          <button className="w-full flex items-center justify-center py-2 px-4 border rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition">
             <PencilIcon className="w-4 h-4 mr-2" />
             Modifier Client
           </button>
 
-          {/* Archiver */}
-          <button className="w-full flex items-center justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+          {/* ARCHIVE */}
+          <button className="w-full flex items-center justify-center py-2 px-4 border rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition">
             <ArchiveIcon className="w-4 h-4 mr-2" />
             Archiver Client
           </button>
 
-          {/* Notification */}
-          <button className="w-full flex items-center justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+          {/* NOTIF */}
+          <button className="w-full flex items-center justify-center py-2 px-4 border rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition">
             <BellIcon className="w-4 h-4 mr-2" />
             Envoyer Notification
           </button>
 
-          {/* VALIDATE STEP BUTTON */}
+          {/* VALIDATION BUTTONS */}
           <div className="flex flex-row gap-2 justify-center h-full">
 
-            {
-              clientData.step > 1 &&
+            {clientData.step > 1 && (
               <button
                 onClick={handleDowngradeStep}
                 disabled={updating || clientData.step === 1}
@@ -236,14 +312,15 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
               >
                 Rétrograder étape
               </button>
-            }
+            )}
 
+            {/* VALIDATE */}
             <button
               onClick={handleValidateStep}
-              disabled={updating || lockStep1}
-              className={`w-full flex items-center justify-center py-2 px-4 rounded-md text-white transition ${updating || lockStep1
-                ? "bg-blue-300 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-700"
+              disabled={updating || lockStep1 || lockStep2}
+              className={`w-full flex items-center justify-center py-2 px-4 rounded-md text-white transition ${updating || lockStep1 || lockStep2
+                  ? "bg-blue-300 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700"
                 }`}
             >
               {updating ? (
@@ -251,19 +328,21 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
               ) : (
                 <CheckCircle2Icon className="w-4 h-4 mr-2" />
               )}
+
               {updating
                 ? "Validation..."
                 : lockStep1
                   ? "Présélection requise"
-                  : `Valider étape ${clientData.step}`}
+                  : lockStep2
+                    ? "Choix client requis"
+                    : `Valider étape ${clientData.step}`}
             </button>
 
           </div>
-
         </div>
       </div>
 
-      {/* =============== VEHICLES =============== */}
+      {/* VEHICLE LIST */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
         <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3 flex items-center">
           <CarIcon className="w-4 h-4 mr-2 text-blue-500" />
@@ -283,7 +362,7 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
             {selectedVehicles.map((v) => (
               <div
                 key={v.id}
-                className="group relative flex items-center space-x-3 border border-gray-200 dark:border-gray-700 rounded-lg p-2 hover:shadow-md transition"
+                className="group relative flex items-center space-x-3 border rounded-lg p-2 hover:shadow-md transition"
               >
                 <button
                   onClick={() => handleRemoveVehicle(v.id)}
@@ -310,19 +389,18 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
         )}
       </div>
 
-      {/* =============== TIMELINE =============== */}
+      {/* TIMELINE */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
         <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">
           Historique
         </h3>
-
         <div className="relative pl-6 space-y-4">
           {clientData.timeline.map((event, index) => (
             <div key={event.id} className="relative">
               <div className="absolute -left-6 mt-1.5">
                 <div className="w-3 h-3 rounded-full bg-blue-500"></div>
                 {index < clientData.timeline.length - 1 && (
-                  <div className="absolute top-3 left-1.5 w-0.5 bg-gray-300 dark:bg-gray-600 h-full"></div>
+                  <div className="absolute top-3 left-1.5 w-0.5 bg-gray-300 h-full"></div>
                 )}
               </div>
 
@@ -337,6 +415,7 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
           ))}
         </div>
       </div>
+
     </div>
   );
 };

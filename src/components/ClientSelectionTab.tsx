@@ -31,11 +31,14 @@ interface ClientSelectionAdminTabProps {
 
 const ClientSelectionAdminTab: React.FC<ClientSelectionAdminTabProps> = ({
   vehicleOptions,
-  formatMileage,
 }) => {
   const [vehicles, setVehicles] = useState<Vehicle[]>(vehicleOptions);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    setVehicles(vehicleOptions);
+  }, [vehicleOptions]);
 
   // 🔹 Récupère le client_id depuis le premier véhicule
   const clientId = vehicles[0]?.client_id;
