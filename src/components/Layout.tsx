@@ -1,5 +1,6 @@
 import {
   BarChartIcon,
+  BellIcon,
   HandshakeIcon,
   LayoutDashboardIcon,
   LogOutIcon,
@@ -8,18 +9,22 @@ import {
   SettingsIcon,
   SunIcon,
   UsersIcon,
-  XIcon,
+  XIcon
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "../contexts/ThemeContext";
+import NotificationPanel from "./NotificationPanel";
 
 const Layout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
+  const [showNotifs, setShowNotifs] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const unreadCount = notifications.filter((n: any) => !n.is_read).length;
 
   // === Vérif connexion ===
   useEffect(() => {
@@ -28,6 +33,35 @@ const Layout: React.FC = () => {
       navigate("/login");
     }
   }, [navigate]);
+
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await fetch("http://localhost:3000/api/notifications/unread", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      const data = await res.json();
+      setNotifications(data);
+      console.log("Notifications chargées", data);
+    } catch (error) {
+      console.log("Erreur notifications", error);
+    }
+  };
+
+  // Charger les notifications au montage + toutes les 10 secondes
+  useEffect(() => {
+    fetchNotifications();
+
+    const interval = setInterval(() => {
+      fetchNotifications();
+    }, 10000); // toutes les 10 sec
+
+    return () => clearInterval(interval);
+  }, []);
+
 
   // === Données user ===
   const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -50,7 +84,6 @@ const Layout: React.FC = () => {
     navigate("/login");
   };
 
-  // === Rendu ===
   return (
     <div className="flex h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
       {/* Backdrop mobile */}
@@ -61,7 +94,6 @@ const Layout: React.FC = () => {
         />
       )}
 
-      {/* === SIDEBAR === */}
       <aside
         className={`fixed inset-y-0 left-0 z-30 w-56 transform bg-white dark:bg-gray-800 shadow-lg transition-transform duration-300 lg:translate-x-0 lg:static lg:inset-auto ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
           }`}
@@ -84,8 +116,8 @@ const Layout: React.FC = () => {
               <Link
                 to="/"
                 className={`flex items-center px-4 py-3 rounded-md transition-colors ${isActive("/")
-                    ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
-                    : "hover:bg-gray-100 dark:hover:bg-gray-700"
+                  ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
+                  : "hover:bg-gray-100 dark:hover:bg-gray-700"
                   }`}
                 onClick={closeSidebar}
               >
@@ -97,8 +129,8 @@ const Layout: React.FC = () => {
               <Link
                 to="/clients"
                 className={`flex items-center px-4 py-3 rounded-md transition-colors ${isActive("/clients")
-                    ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
-                    : "hover:bg-gray-100 dark:hover:bg-gray-700"
+                  ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
+                  : "hover:bg-gray-100 dark:hover:bg-gray-700"
                   }`}
                 onClick={closeSidebar}
               >
@@ -110,8 +142,8 @@ const Layout: React.FC = () => {
               <Link
                 to="/metrics"
                 className={`flex items-center px-4 py-3 rounded-md transition-colors ${isActive("/metrics")
-                    ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
-                    : "hover:bg-gray-100 dark:hover:bg-gray-700"
+                  ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
+                  : "hover:bg-gray-100 dark:hover:bg-gray-700"
                   }`}
                 onClick={closeSidebar}
               >
@@ -123,8 +155,8 @@ const Layout: React.FC = () => {
               <Link
                 to="/partners"
                 className={`flex items-center px-4 py-3 rounded-md transition-colors ${isActive("/partners")
-                    ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
-                    : "hover:bg-gray-100 dark:hover:bg-gray-700"
+                  ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
+                  : "hover:bg-gray-100 dark:hover:bg-gray-700"
                   }`}
                 onClick={closeSidebar}
               >
@@ -136,8 +168,8 @@ const Layout: React.FC = () => {
               <Link
                 to="/settings"
                 className={`flex items-center px-4 py-3 rounded-md transition-colors ${isActive("/settings")
-                    ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
-                    : "hover:bg-gray-100 dark:hover:bg-gray-700"
+                  ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
+                  : "hover:bg-gray-100 dark:hover:bg-gray-700"
                   }`}
                 onClick={closeSidebar}
               >
@@ -164,7 +196,19 @@ const Layout: React.FC = () => {
           </div>
 
           <div className="flex items-center space-x-4">
-            {/* Toggle dark mode */}
+            <button
+              onClick={() => setShowNotifs(!showNotifs)}
+              className="relative p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+            >
+              <BellIcon className="w-6 h-6" />
+
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold px-1.5 rounded-full">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+
             <button
               className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
               onClick={toggleTheme}
@@ -177,7 +221,6 @@ const Layout: React.FC = () => {
               )}
             </button>
 
-            {/* User avatar + logout */}
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
                 {initials}
@@ -191,6 +234,14 @@ const Layout: React.FC = () => {
             </div>
           </div>
         </header>
+
+        {/* === NOTIFICATION PANEL === */}
+        {showNotifs && (
+          <NotificationPanel
+            notifications={notifications}
+            refresh={fetchNotifications}
+          />
+        )}
 
         {/* Contenu principal */}
         <main className="flex-1 overflow-y-auto p-6 bg-gray-100 dark:bg-gray-900">
