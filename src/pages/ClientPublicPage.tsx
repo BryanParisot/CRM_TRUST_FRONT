@@ -1,10 +1,7 @@
 // --- imports ---
 import {
-    CarIcon,
-    CheckCircle2Icon,
     EuroIcon,
-    ExternalLink,
-    GaugeIcon,
+    GaugeIcon
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";

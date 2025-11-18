@@ -3,7 +3,9 @@ import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import Layout from './components/Layout';
 import { ThemeProvider } from './contexts/ThemeContext';
 import ClientDetail from './pages/ClientDetail';
+import ClientPaymentPage from "./pages/ClientPaymentPage";
 import ClientPublicPage from "./pages/ClientPublicPage";
+import ClientPublicRouter from "./pages/ClientRouterPublic";
 import ClientSelectionConfirmation from "./pages/ClientSelectionConfirmation";
 import Dashboard from './pages/Dashboard';
 import Login from "./pages/login"; // 👈
@@ -15,9 +17,11 @@ export function App() {
     <ThemeProvider>
       <Router>
         <Routes>
+          <Route path="/client-link/:token" element={<ClientPublicRouter />} />
+          <Route path="/client-link/:token/payment" element={<ClientPaymentPage />} />
           <Route path="/client-link/:token/confirmation" element={<ClientSelectionConfirmation />} />
+          <Route path="/client-link/:token/select" element={<ClientPublicPage />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/client-link/:token" element={<ClientPublicPage />} />
           {/* Protégé par layout */}
           <Route element={<Layout />}>
             <Route path="/" element={<Dashboard />} />
