@@ -10,6 +10,7 @@ import ClientSelectionConfirmation from "./pages/ClientSelectionConfirmation";
 import Dashboard from './pages/Dashboard';
 import Login from "./pages/login"; // 👈
 import Metrics from './pages/Metrics';
+import ClientChecklistPage from "./pages/ClientChecklistPage";
 
 
 export function App() {
@@ -21,6 +22,7 @@ export function App() {
           <Route path="/client-link/:token/payment" element={<ClientPaymentPage />} />
           <Route path="/client-link/:token/confirmation" element={<ClientSelectionConfirmation />} />
           <Route path="/client-link/:token/select" element={<ClientPublicPage />} />
+          <Route path="/client-link/:token/checklist" element={<ClientChecklistPage />} />
           <Route path="/login" element={<Login />} />
           {/* Protégé par layout */}
           <Route element={<Layout />}>
