@@ -1,29 +1,10 @@
-import {
-    CalendarIcon,
-    CheckCircle2Icon,
-    EuroIcon,
-    ExternalLink,
-    FuelIcon,
-    GaugeIcon
-} from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useParams } from "react-router-dom";
 import ClientSelectionLoadingModal from "../components/ClientSelectionLoadingModal";
+import ClientVehicleCard, { Vehicle } from "../components/ClientVehicleCard";
 
-interface Vehicle {
-    id: number;
-    title: string;
-    price: string;
-    mileage: string;
-    year: string;
-    fuel: string;
-    gearbox?: string;
-    power?: string;
-    image: string;
-    link: string;
-    selected_by?: string;
-}
+
 
 interface ClientPublic {
     id: number;
@@ -175,92 +156,13 @@ const ClientPublicPage: React.FC = () => {
                             const selected = selectedIds.includes(v.id);
 
                             return (
-                                <div
+
+                                <ClientVehicleCard
                                     key={v.id}
-                                    onClick={() => toggleSelect(v.id)}
-                                    className={`
-        cursor-pointer bg-white rounded-2xl overflow-hidden
-        shadow-md hover:shadow-2xl transition-all duration-300
-        border ${selected ? "border-blue-600 ring-2 ring-blue-400" : "border-gray-200 hover:border-blue-300"}
-        group relative
-    `}
-                                >
-                                    {/* IMAGE SECTION */}
-                                    <div className="relative h-44 w-full overflow-hidden">
-                                        <img
-                                            src={v.image}
-                                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                        />
-
-                                        {/* BADGE SELECTED */}
-                                        {selected && (
-                                            <div className="absolute top-3 right-3 bg-blue-600/90 backdrop-blur-md 
-            text-white px-3 py-1 rounded-full text-xs flex items-center gap-1 shadow-lg">
-                                                <CheckCircle2Icon className="w-4 h-4" />
-                                                Sélectionné
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* CONTENT */}
-                                    <div className="p-5 space-y-4">
-
-                                        {/* TITLE */}
-                                        <p className="font-semibold text-gray-900 text-base leading-tight line-clamp-2 min-h-[40px]">
-                                            {v.title}
-                                        </p>
-
-                                        {/* INFO GRID */}
-                                        <div className="grid grid-cols-2 gap-3 text-sm text-gray-600">
-
-                                            <div className="flex items-center gap-2">
-                                                <EuroIcon className="w-4 h-4 text-green-600" />
-                                                <span className="font-medium">{v.price}</span>
-                                            </div>
-
-                                            <div className="flex items-center gap-2">
-                                                <GaugeIcon className="w-4 h-4 text-blue-600" />
-                                                <span>{v.mileage}</span>
-                                            </div>
-
-                                            <div className="flex items-center gap-2">
-                                                <FuelIcon className="w-4 h-4 text-orange-500" />
-                                                <span>{v.fuel}</span>
-                                            </div>
-
-                                            <div className="flex items-center gap-2">
-                                                <CalendarIcon className="w-4 h-4 text-gray-500" />
-                                                <span>{v.year}</span>
-                                            </div>
-
-                                            {v.power && (
-                                                <div className="flex items-center gap-2">
-                                                    ⚡ <span>{v.power} ch</span>
-                                                </div>
-                                            )}
-
-                                            {v.gearbox && (
-                                                <div className="flex items-center gap-2">
-                                                    🔧 <span>{v.gearbox}</span>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* CTA "Voir l'annonce" */}
-                                        <a
-                                            href={v.link}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="block w-full text-center mt-3 py-2 text-sm font-medium
-            text-blue-700 border border-blue-200 rounded-lg 
-            hover:bg-blue-50 hover:border-blue-300 transition-all"
-                                            onClick={(e) => e.stopPropagation()}
-                                        >
-                                            Voir l’annonce complète
-                                            <ExternalLink className="w-4 h-4 inline-block ml-1" />
-                                        </a>
-                                    </div>
-                                </div>
+                                    vehicle={v}
+                                    isSelected={selected}
+                                    onToggleSelect={toggleSelect}
+                                />
                             );
                         })}
                     </div>

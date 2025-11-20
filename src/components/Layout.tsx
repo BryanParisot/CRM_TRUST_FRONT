@@ -44,14 +44,13 @@ const Layout: React.FC = () => {
       });
 
       const data = await res.json();
-      setNotifications(data);
+      setNotifications(Array.isArray(data) ? data : []);
       console.log("Notifications chargées", data);
     } catch (error) {
       console.log("Erreur notifications", error);
     }
   };
 
-  // Charger les notifications au montage + toutes les 10 secondes
   useEffect(() => {
     fetchNotifications();
 

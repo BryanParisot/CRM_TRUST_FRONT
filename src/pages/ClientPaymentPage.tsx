@@ -4,14 +4,11 @@ import {
   ShieldCheckIcon,
   FileUpIcon,
   CarIcon,
-  GaugeIcon,
-  EuroIcon,
-  FuelIcon,
-  CalendarIcon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useParams } from "react-router-dom";
+import ClientVehicleCard from "../components/ClientVehicleCard";
 
 export default function ClientPaymentPage() {
   const { token } = useParams();
@@ -78,7 +75,7 @@ export default function ClientPaymentPage() {
 
   const confirmPayment = async () => {
     // 1️⃣ On exige la CNI + upload
-   // const ok = await handleUpload();
+    // const ok = await handleUpload();
     //if (!ok) return;
 
     // 2️⃣ On envoie juste une notification à l’admin
@@ -134,90 +131,27 @@ export default function ClientPaymentPage() {
         </div>
 
         {/* VEHICULES */}
-              {/* VEHICULES */}
-              <div>
-                  <h2 className="font-semibold text-lg mb-2 flex items-center gap-2">
-                      <CarIcon className="w-5 h-5 text-blue-600" />
-                      Vos véhicules sélectionnés
-                  </h2>
+        <div>
+          <h2 className="font-semibold text-lg mb-2 flex items-center gap-2">
+            <CarIcon className="w-5 h-5 text-blue-600" />
+            Vos véhicules sélectionnés
+          </h2>
 
-                  <p className="text-gray-500 text-sm mb-4">
-                      Voici les véhicules que vous avez retenus. Nous allons vérifier chaque
-                      annonce pour garantir une transaction sécurisée et conforme à vos attentes.
-                  </p>
+          <p className="text-gray-500 text-sm mb-4">
+            Voici les véhicules que vous avez retenus. Nous allons vérifier chaque
+            annonce pour garantir une transaction sécurisée et conforme à vos attentes.
+          </p>
 
-                  <div className="grid sm:grid-cols-2 gap-6">
-                      {vehicles.map((v) => (
-                          <div
-                              key={v.id}
-                              className="rounded-2xl overflow-hidden shadow-md bg-white border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition p-3"
-                          >
-                              {/* IMAGE */}
-                              <div className="relative">
-                                  <img
-                                      src={v.image}
-                                      alt={v.title}
-                                      className="w-full h-40 object-cover rounded-lg"
-                                  />
-                              </div>
-
-                              {/* INFOS */}
-                              <div className="mt-3">
-                                  <p className="font-semibold text-gray-900 text-base leading-tight">
-                                      {v.title}
-                                  </p>
-
-                                  <div className="mt-2 space-y-1 text-sm text-gray-600">
-
-                                      <div className="flex items-center gap-2">
-                                          <EuroIcon className="w-4 h-4 text-green-600" />
-                                          <span className="font-medium text-gray-800">{v.price}</span>
-                                      </div>
-
-                                      <div className="flex items-center gap-2">
-                                          <GaugeIcon className="w-4 h-4 text-blue-600" />
-                                          {v.mileage}
-                                      </div>
-
-                                      <div className="flex items-center gap-2">
-                                          <FuelIcon className="w-4 h-4 text-orange-600" />
-                                          {v.fuel}
-                                      </div>
-
-                                      <div className="flex items-center gap-2">
-                                          <CalendarIcon className="w-4 h-4 text-gray-700" />
-                                          {v.year}
-                                      </div>
-                                  </div>
-
-                                  {/* LINK */}
-                                  <a
-                                      href={v.link}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="mt-4 w-full inline-block text-center bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium py-2 rounded-lg transition flex items-center justify-center gap-2"
-                                  >
-                                      Voir l’annonce
-                                      <svg
-                                          xmlns="http://www.w3.org/2000/svg"
-                                          className="w-4 h-4"
-                                          fill="none"
-                                          viewBox="0 0 24 24"
-                                          stroke="currentColor"
-                                      >
-                                          <path
-                                              strokeLinecap="round"
-                                              strokeLinejoin="round"
-                                              strokeWidth="2"
-                                              d="M14 3h7m0 0v7m0-7L10 14"
-                                          />
-                                      </svg>
-                                  </a>
-                              </div>
-                          </div>
-                      ))}
-                  </div>
-              </div>
+          <div className="grid sm:grid-cols-2 gap-6">
+            {vehicles.map((v) => (
+              <ClientVehicleCard
+                key={v.id}
+                vehicle={v}
+                readOnly={true}
+              />
+            ))}
+          </div>
+        </div>
 
         {/* IDENTITÉ */}
         <div>
