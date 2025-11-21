@@ -21,20 +21,20 @@ const recentActivities = [{
 }];
 const Dashboard: React.FC = () => {
   return <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Tableau de bord</h1>
-      {/* Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard title="CA Mensuel" value="€150,000" type="revenue" trend="up" trendValue="12%" />
-        <MetricCard title="Véhicules Vendus" value="20" type="vehicles" />
-        <MetricCard title="Taux de Conversion" value="40%" type="conversion" />
-        <MetricCard title="Prospects Actifs" value="15" type="leads" />
-      </div>
-      {/* Kanban Board */}
-      <div className="h-[500px]">
-        <KanbanBoard />
-      </div>
-      {/* Activity Feed */}
-      <ActivityFeed activities={recentActivities} />
-    </div>;
+    <h1 className="text-2xl font-bold">Tableau de bord</h1>
+    {/* Metrics Cards */}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <MetricCard title="CA Mensuel" value="€150,000" type="revenue" trend="up" trendValue="12%" />
+      <MetricCard title="Véhicules Vendus" value="20" type="vehicles" />
+      <MetricCard title="Taux de Conversion" value="40%" type="conversion" />
+      <MetricCard title="Prospects Actifs" value="15" type="leads" />
+    </div>
+    {/* Kanban Board */}
+    <div className="h-[850px]">
+      <KanbanBoard />
+    </div>
+    {/* Activity Feed */}
+    <ActivityFeed activities={recentActivities} />
+  </div>;
 };
 export default Dashboard;

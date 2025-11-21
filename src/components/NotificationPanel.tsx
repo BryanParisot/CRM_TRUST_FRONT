@@ -29,7 +29,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({
                 <p className="text-sm text-gray-500">Aucune notification</p>
             )}
 
-            <div className="space-y-3">
+            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
                 {notifications.map((n) => (
                     <div
                         key={n.id}

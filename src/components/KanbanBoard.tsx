@@ -35,6 +35,7 @@ export interface Client {
   premiere_immat?: string;
   price?: string;
   selectedVehicles?: string[];
+  budget?: number | string;
 }
 
 export interface Column {
@@ -159,14 +160,18 @@ const KanbanBoard: React.FC = () => {
   return (
     <div className="h-full w-full flex flex-col">
       {/* Header Top */}
-      <div className="flex items-center justify-between mb-4 px-2">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-          Pipeline Clients 🚗
-        </h2>
+      <div className="flex items-center justify-between mb-6 px-2">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              Pipeline Clients
+            </span>
+            🚗
+          </h2>
+        </div>
         <button
           onClick={fetchClients}
-          className="flex items-center text-sm px-3 py-1.5 border rounded-lg border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-        >
+          className="flex items-center text-sm px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all shadow-sm hover:shadow-md">
           <RefreshCwIcon className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
           Rafraîchir
         </button>
@@ -181,7 +186,7 @@ const KanbanBoard: React.FC = () => {
       >
         <motion.div
           layout
-          className="flex overflow-x-auto gap-4 pb-4 h-full px-2"
+          className="flex overflow-x-auto gap-4 pb-4 h-full min-h-[calc(100vh-200px)] px-2"
         >
           {columns.map((column) => (
             <SortableContext
@@ -208,9 +213,8 @@ const KanbanBoard: React.FC = () => {
                   {column.step === 1 && (
                     <button
                       onClick={openModal}
-                      className="mt-3 w-full flex items-center justify-center py-2 px-4 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors"
-                    >
-                      <PlusIcon className="w-4 h-4 mr-1" />
+                      className="mt-3 w-full flex items-center justify-center py-3 px-4 border-2 border-dashed border-blue-300 dark:border-blue-600 rounded-xl text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-200 group">
+                      <PlusIcon className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
                       Ajouter un client
                     </button>
                   )}
