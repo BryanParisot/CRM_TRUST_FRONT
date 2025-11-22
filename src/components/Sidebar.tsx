@@ -10,7 +10,10 @@ import {
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 import { ClipLoader } from "react-spinners";
+import DeleteClientModal from "./DeleteClientModal";
+import EditClientModal from "./EditClientModal";
 
 interface TimelineEvent {
   id: string;
@@ -24,6 +27,13 @@ interface ClientData {
   name: string;
   email: string;
   phone: string;
+  marque: string;
+  modele: string;
+  max_km: string;
+  couleur: string;
+  carburant: string;
+  boite: string;
+  puissance_min: number;
   step: number;
   progress: number;
   budget: string;
@@ -45,11 +55,16 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
+  const navigate = useNavigate();
   const [selectedVehicles, setSelectedVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [updating, setUpdating] = useState<boolean>(false);
   const [linkLoading, setLinkLoading] = useState(false);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [showEditModal, setShowEditModal] = useState<boolean>(false);
+  const [isUpdating, setIsUpdating] = useState<boolean>(false);
 
   // ==========================================
   // 🔵 LOAD PRE-SELECTED VEHICLES
@@ -247,6 +262,70 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
   };
 
   // ==========================================
+  // 🗑️ DELETE CLIENT
+  // ==========================================
+  const handleDeleteClient = async () => {
+    try {
+      setIsDeleting(true);
+
+      const res = await fetch(
+        `http://localhost:3000/api/clients/${clientData.id}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+
+      if (!res.ok) throw new Error("Erreur lors de la suppression");
+
+      toast.success("Client supprimé avec succès ✅");
+      setShowDeleteModal(false);
+
+      // Redirect to clients list
+      navigate("/");
+    } catch (error: any) {
+      toast.error(error.message || "Erreur lors de la suppression ❌");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // ==========================================
+  // ✏️ UPDATE CLIENT
+  // ==========================================
+  const handleUpdateClient = async (formData: any) => {
+    try {
+      setIsUpdating(true);
+
+      const res = await fetch(
+        `http://localhost:3000/api/clients/${clientData.id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify(formData),
+        }
+      );
+
+      if (!res.ok) throw new Error("Erreur lors de la mise à jour");
+
+      toast.success("Client modifié avec succès ✅");
+      setShowEditModal(false);
+
+      // Reload page to show updated data
+      window.location.reload();
+    } catch (error: any) {
+      toast.error(error.message || "Erreur lors de la mise à jour ❌");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  // ==========================================
   // 🖼️ RENDER
   // ==========================================
   return (
@@ -265,8 +344,8 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
             onClick={handleGenerateLink}
             disabled={noVehicle || linkLoading}
             className={`w-full flex items-center justify-center py-2 px-4 border rounded-md transition ${noVehicle || linkLoading
-                ? "text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed"
-                : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              ? "text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed"
+              : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
               }`}
           >
             {linkLoading ? (
@@ -284,13 +363,19 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
           )}
 
           {/* MODIFY */}
-          <button className="w-full flex items-center justify-center py-2 px-4 border rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+          <button
+            onClick={() => setShowEditModal(true)}
+            className="w-full flex items-center justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+          >
             <PencilIcon className="w-4 h-4 mr-2" />
             Modifier Client
           </button>
 
           {/* ARCHIVE */}
-          <button className="w-full flex items-center justify-center py-2 px-4 border rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+          <button
+            onClick={() => setShowDeleteModal(true)}
+            className="w-full flex items-center justify-center py-2 px-4 border border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 transition"
+          >
             <ArchiveIcon className="w-4 h-4 mr-2" />
             Archiver Client
           </button>
@@ -319,8 +404,8 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
               onClick={handleValidateStep}
               disabled={updating || lockStep1 || lockStep2}
               className={`w-full flex items-center justify-center py-2 px-4 rounded-md text-white transition ${updating || lockStep1 || lockStep2
-                  ? "bg-blue-300 cursor-not-allowed"
-                  : "bg-blue-600 hover:bg-blue-700"
+                ? "bg-blue-300 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
                 }`}
             >
               {updating ? (
@@ -415,6 +500,37 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
           ))}
         </div>
       </div>
+
+      {/* DELETE CONFIRMATION MODAL */}
+      <DeleteClientModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteClient}
+        clientName={clientData.name}
+        isDeleting={isDeleting}
+      />
+
+      {/* EDIT CLIENT MODAL */}
+      <EditClientModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        onSubmit={handleUpdateClient}
+        clientData={{
+          name: clientData.name,
+          email: clientData.email,
+          phone: clientData.phone,
+          marque: clientData.marque,
+          modele: clientData.modele,
+          budget: clientData.budget,
+          max_km: clientData.max_km,
+          carburant: clientData.carburant,
+          boite: clientData.boite,
+          puissance_min: String(clientData.puissance_min),
+          couleur: clientData.couleur,
+          description: clientData.description,
+        }}
+        isUpdating={isUpdating}
+      />
 
     </div>
   );
