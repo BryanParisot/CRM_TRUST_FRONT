@@ -13,6 +13,8 @@ import Metrics from './pages/Metrics';
 import ClientChecklistPage from "./pages/ClientChecklistPage";
 import ClientSuccessPage from "./pages/ClientSuccessPage";
 import ClientPaymentThankYouPage from "./pages/ClientPaymentThankYouPage";
+import ClientProfile from './pages/ClientProfile';
+import ClientsList from './pages/ClientsList';
 
 
 export function App() {
@@ -31,7 +33,9 @@ export function App() {
           {/* Protégé par layout */}
           <Route element={<Layout />}>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/clients" element={<ClientsList />} />
             <Route path="/client/:id" element={<ClientDetail />} />
+            <Route path="/client/:id/profile" element={<ClientProfile />} />
             <Route path="/metrics" element={<Metrics />} />
           </Route>
         </Routes>
