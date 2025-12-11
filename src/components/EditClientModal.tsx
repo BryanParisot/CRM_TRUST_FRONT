@@ -1,5 +1,6 @@
 import { X } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
+import vehicleData from '../data/vehicles.json';
 
 interface EditClientFormData {
     name: string;
@@ -14,6 +15,7 @@ interface EditClientFormData {
     puissance_min: string;
     couleur: string;
     description: string;
+    premiere_immat: string;
 }
 
 interface EditClientModalProps {
@@ -38,14 +40,23 @@ const EditClientModal: React.FC<EditClientModalProps> = ({
         setFormData(clientData);
     }, [clientData]);
 
+    // Get available models based on selected marque
+    const availableModels = useMemo(() => {
+        const selectedBrand = vehicleData.find(v => v.brand === formData.marque);
+        return selectedBrand ? selectedBrand.models : [];
+    }, [formData.marque]);
+
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
     ) => {
         const { name, value } = e.target;
-        setFormData((prev) => ({
-            ...prev,
-            [name]: value,
-        }));
+        setFormData((prev) => {
+            // Reset model if marque changes
+            if (name === 'marque' && value !== prev.marque) {
+                return { ...prev, [name]: value, modele: '' };
+            }
+            return { ...prev, [name]: value };
+        });
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -162,30 +173,38 @@ const EditClientModal: React.FC<EditClientModalProps> = ({
                                     <label htmlFor="marque" className="block text-sm font-medium mb-1">
                                         Marque
                                     </label>
-                                    <input
-                                        type="text"
+                                    <select
                                         id="marque"
                                         name="marque"
                                         value={formData.marque}
                                         onChange={handleChange}
                                         disabled={isUpdating}
                                         className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50"
-                                    />
+                                    >
+                                        <option value="">Sélectionner une marque</option>
+                                        {vehicleData.map((v, index) => (
+                                            <option key={index} value={v.brand}>{v.brand}</option>
+                                        ))}
+                                    </select>
                                 </div>
 
                                 <div>
                                     <label htmlFor="modele" className="block text-sm font-medium mb-1">
                                         Modèle
                                     </label>
-                                    <input
-                                        type="text"
+                                    <select
                                         id="modele"
                                         name="modele"
                                         value={formData.modele}
                                         onChange={handleChange}
-                                        disabled={isUpdating}
-                                        className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50"
-                                    />
+                                        disabled={isUpdating || !formData.marque}
+                                        className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        <option value="">Sélectionner un modèle</option>
+                                        {availableModels.map((model, index) => (
+                                            <option key={index} value={model}>{model}</option>
+                                        ))}
+                                    </select>
                                 </div>
 
                                 <div>
@@ -275,6 +294,22 @@ const EditClientModal: React.FC<EditClientModalProps> = ({
                                         value={formData.puissance_min}
                                         onChange={handleChange}
                                         disabled={isUpdating}
+                                        className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label htmlFor="premiere_immat" className="block text-sm font-medium mb-1">
+                                        Année Min
+                                    </label>
+                                    <input
+                                        type="number"
+                                        id="premiere_immat"
+                                        name="premiere_immat"
+                                        value={formData.premiere_immat}
+                                        onChange={handleChange}
+                                        disabled={isUpdating}
+                                        placeholder="2018"
                                         className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50"
                                     />
                                 </div>

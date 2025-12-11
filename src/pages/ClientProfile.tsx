@@ -35,6 +35,7 @@ interface ClientData {
     puissance_min: number;
     budget: string;
     description: string;
+    premiere_immat?: string;
 }
 
 const ClientProfile: React.FC = () => {
@@ -368,6 +369,7 @@ const ClientProfile: React.FC = () => {
                     puissance_min: String(clientData.puissance_min),
                     couleur: clientData.couleur,
                     description: clientData.description,
+                    premiere_immat: clientData.premiere_immat || "",
                 }}
                 isUpdating={isUpdating}
             />

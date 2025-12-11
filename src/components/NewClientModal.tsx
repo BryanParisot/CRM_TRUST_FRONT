@@ -16,9 +16,10 @@ import {
   Wallet,
   X
 } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import vehicleData from '../data/vehicles.json';
 
-interface NewClientFormData {
+export interface NewClientFormData {
   // Step 1: Client Info
   name: string;
   email: string;
@@ -30,18 +31,35 @@ interface NewClientFormData {
   modele: string;
   budget: string;
   max_km: string;
-  year: string;
-  fuel: string;
-  gearbox: string;
-  color: string;
-  min_power: string;
+  first_registration: string; // was year
+  carburant: string;        // was fuel
+  boite: string;            // was gearbox
+  vehicle_color: string;    // was color
+  puissance_min: string;    // was min_power
+  description: string;
+}
+
+export interface ClientSubmissionData {
+  name: string;
+  email: string;
+  phone: string;
+  date_of_birth: string;
+  marque: string;
+  modele: string;
+  budget: number;
+  max_km: number;
+  first_registration: number;
+  carburant: string;
+  boite: string;
+  vehicle_color: string;
+  puissance_min: number;
   description: string;
 }
 
 interface NewClientModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: NewClientFormData) => void;
+  onSubmit: (data: ClientSubmissionData) => void;
 }
 
 const NewClientModal: React.FC<NewClientModalProps> = ({
@@ -60,19 +78,31 @@ const NewClientModal: React.FC<NewClientModalProps> = ({
     modele: '',
     budget: '',
     max_km: '',
-    year: '',
-    fuel: '',
-    gearbox: '',
-    color: '',
-    min_power: '',
+    first_registration: '',
+    carburant: '',
+    boite: '',
+    vehicle_color: '',
+    puissance_min: '',
     description: ''
   });
 
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
+  // Get available models based on selected marque
+  const availableModels = useMemo(() => {
+    const selectedBrand = vehicleData.find(v => v.brand === formData.marque);
+    return selectedBrand ? selectedBrand.models : [];
+  }, [formData.marque]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => {
+      // Reset model if marque changes
+      if (name === 'marque' && value !== prev.marque) {
+        return { ...prev, [name]: value, modele: '' };
+      }
+      return { ...prev, [name]: value };
+    });
   };
 
   const handleNext = () => {
@@ -92,13 +122,24 @@ const NewClientModal: React.FC<NewClientModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+
+    // Convert numeric fields
+    const submissionData: ClientSubmissionData = {
+      ...formData,
+      budget: Number(formData.budget) || 0,
+      max_km: Number(formData.max_km) || 0,
+      first_registration: Number(formData.first_registration) || 0,
+      puissance_min: Number(formData.puissance_min) || 0,
+    };
+
+    onSubmit(submissionData);
+
     // Reset form after submit
     setFormData({
       name: '', email: '', phone: '', date_of_birth: '',
       marque: '', modele: '', budget: '', max_km: '',
-      year: '', fuel: '', gearbox: '', color: '',
-      min_power: '', description: ''
+      first_registration: '', carburant: '', boite: '', vehicle_color: '',
+      puissance_min: '', description: ''
     });
     setStep(1);
   };
@@ -130,7 +171,7 @@ const NewClientModal: React.FC<NewClientModalProps> = ({
   };
 
   return (
-    <AnimatePresence>
+    <AnimatePresence initial={false}>
       {isOpen && (
         <>
           <motion.div
@@ -186,7 +227,10 @@ const NewClientModal: React.FC<NewClientModalProps> = ({
                         initial="enter"
                         animate="center"
                         exit="exit"
-                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                        transition={{
+                          x: { type: "spring", stiffness: 300, damping: 30 },
+                          opacity: { duration: 0.2 }
+                        }}
                         className="space-y-5"
                       >
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -266,7 +310,10 @@ const NewClientModal: React.FC<NewClientModalProps> = ({
                         initial="enter"
                         animate="center"
                         exit="exit"
-                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                        transition={{
+                          x: { type: "spring", stiffness: 300, damping: 30 },
+                          opacity: { duration: 0.2 }
+                        }}
                         className="space-y-5"
                       >
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -274,32 +321,39 @@ const NewClientModal: React.FC<NewClientModalProps> = ({
                             <label className={labelClasses}>Marque</label>
                             <div className="relative">
                               <Car className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                              <input
-                                type="text"
+                              <select
                                 name="marque"
                                 value={formData.marque}
                                 onChange={handleChange}
                                 onFocus={() => setFocusedField('marque')}
                                 onBlur={() => setFocusedField(null)}
-                                className={inputClasses('marque')}
-                                placeholder="BMW, Audi..."
-                              />
+                                className={`${inputClasses('marque')} appearance-none`}
+                              >
+                                <option value="">Sélectionner une marque</option>
+                                {vehicleData.map((v, index) => (
+                                  <option key={index} value={v.brand}>{v.brand}</option>
+                                ))}
+                              </select>
                             </div>
                           </div>
                           <div>
                             <label className={labelClasses}>Modèle</label>
                             <div className="relative">
                               <Car className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                              <input
-                                type="text"
+                              <select
                                 name="modele"
                                 value={formData.modele}
                                 onChange={handleChange}
                                 onFocus={() => setFocusedField('modele')}
                                 onBlur={() => setFocusedField(null)}
-                                className={inputClasses('modele')}
-                                placeholder="X5, Q5..."
-                              />
+                                disabled={!formData.marque}
+                                className={`${inputClasses('modele')} appearance-none disabled:opacity-50 disabled:cursor-not-allowed`}
+                              >
+                                <option value="">Sélectionner un modèle</option>
+                                {availableModels.map((model, index) => (
+                                  <option key={index} value={model}>{model}</option>
+                                ))}
+                              </select>
                             </div>
                           </div>
                           <div>
@@ -335,17 +389,17 @@ const NewClientModal: React.FC<NewClientModalProps> = ({
                             </div>
                           </div>
                           <div>
-                            <label className={labelClasses}>Année Min</label>
+                            <label className={labelClasses}>Année (1ère Immat)</label>
                             <div className="relative">
                               <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                               <input
                                 type="number"
-                                name="year"
-                                value={formData.year}
+                                name="first_registration"
+                                value={formData.first_registration}
                                 onChange={handleChange}
-                                onFocus={() => setFocusedField('year')}
+                                onFocus={() => setFocusedField('first_registration')}
                                 onBlur={() => setFocusedField(null)}
-                                className={inputClasses('year')}
+                                className={inputClasses('first_registration')}
                                 placeholder="2018"
                               />
                             </div>
@@ -355,12 +409,12 @@ const NewClientModal: React.FC<NewClientModalProps> = ({
                             <div className="relative">
                               <Fuel className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                               <select
-                                name="fuel"
-                                value={formData.fuel}
+                                name="carburant"
+                                value={formData.carburant}
                                 onChange={handleChange}
-                                onFocus={() => setFocusedField('fuel')}
+                                onFocus={() => setFocusedField('carburant')}
                                 onBlur={() => setFocusedField(null)}
-                                className={`${inputClasses('fuel')} appearance-none`}
+                                className={`${inputClasses('carburant')} appearance-none`}
                               >
                                 <option value="">Peu importe</option>
                                 <option value="Diesel">Diesel</option>
@@ -375,12 +429,12 @@ const NewClientModal: React.FC<NewClientModalProps> = ({
                             <div className="relative">
                               <Settings className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                               <select
-                                name="gearbox"
-                                value={formData.gearbox}
+                                name="boite"
+                                value={formData.boite}
                                 onChange={handleChange}
-                                onFocus={() => setFocusedField('gearbox')}
+                                onFocus={() => setFocusedField('boite')}
                                 onBlur={() => setFocusedField(null)}
-                                className={`${inputClasses('gearbox')} appearance-none`}
+                                className={`${inputClasses('boite')} appearance-none`}
                               >
                                 <option value="">Peu importe</option>
                                 <option value="Automatique">Automatique</option>
@@ -394,13 +448,29 @@ const NewClientModal: React.FC<NewClientModalProps> = ({
                               <Palette className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                               <input
                                 type="text"
-                                name="color"
-                                value={formData.color}
+                                name="vehicle_color"
+                                value={formData.vehicle_color}
                                 onChange={handleChange}
-                                onFocus={() => setFocusedField('color')}
+                                onFocus={() => setFocusedField('vehicle_color')}
                                 onBlur={() => setFocusedField(null)}
-                                className={inputClasses('color')}
+                                className={inputClasses('vehicle_color')}
                                 placeholder="Noir, Gris..."
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className={labelClasses}>Puissance Min (ch)</label>
+                            <div className="relative">
+                              <Gauge className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                              <input
+                                type="number"
+                                name="puissance_min"
+                                value={formData.puissance_min}
+                                onChange={handleChange}
+                                onFocus={() => setFocusedField('puissance_min')}
+                                onBlur={() => setFocusedField(null)}
+                                className={inputClasses('puissance_min')}
+                                placeholder="150"
                               />
                             </div>
                           </div>

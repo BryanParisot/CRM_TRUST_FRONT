@@ -1,4 +1,5 @@
 import {
+  Calendar,
   CarIcon,
   CogIcon,
   FuelIcon,
@@ -41,6 +42,7 @@ interface ClientData {
   description: string;
   timeline: TimelineEvent[];
   deliveryOption?: string;
+  premiere_immat?: string;
 }
 
 interface Vehicle {
@@ -77,6 +79,7 @@ const ClientInfoTab: React.FC<ClientInfoTabProps> = ({
     { label: "Budget", value: clientData.budget, icon: WalletIcon },
     { label: "Marque", value: clientData.marque, icon: CarIcon },
     { label: "Modele", value: clientData.modele, icon: CarIcon },
+    { label: "Année Min", value: clientData.premiere_immat, icon: Calendar },
     { label: "Carburant", value: clientData.carburant, icon: FuelIcon },
     { label: "Puissance", value: clientData.puissance_min, icon: ZapIcon },
     { label: "Boite", value: clientData.boite, icon: CogIcon },

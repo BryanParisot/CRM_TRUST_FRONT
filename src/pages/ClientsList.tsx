@@ -15,7 +15,7 @@ import { useNavigate } from "react-router-dom";
 import { ClipLoader } from "react-spinners";
 import DeleteClientModal from "../components/DeleteClientModal";
 import EditClientModal from "../components/EditClientModal";
-import NewClientModal from "../components/NewClientModal";
+import NewClientModal, { ClientSubmissionData } from "../components/NewClientModal";
 
 interface Client {
     id: number;
@@ -25,13 +25,15 @@ interface Client {
     marque?: string;
     modele?: string;
     max_km?: string;
-    couleur?: string;
+    vehicle_color?: string;
+    couleur?: string; // Keeping for backward compatibility if needed
     carburant?: string;
     boite?: string;
     puissance_min?: number;
     step: number;
     budget?: string;
     description?: string;
+    first_registration?: string;
 }
 
 const ClientsList: React.FC = () => {
@@ -167,7 +169,7 @@ const ClientsList: React.FC = () => {
     };
 
     // Handle add new client
-    const handleAddClient = async (formData: any) => {
+    const handleAddClient = async (formData: ClientSubmissionData) => {
         try {
             const res = await fetch("http://localhost:3000/api/clients", {
                 method: "POST",
@@ -180,9 +182,14 @@ const ClientsList: React.FC = () => {
 
             if (!res.ok) throw new Error("Erreur lors de la création");
 
+            const newClient = await res.json();
+
+            // Update local state without reload
+            setClients(prev => [newClient, ...prev]);
+            setFilteredClients(prev => [newClient, ...prev]);
+
             toast.success("Client créé avec succès ✅");
             setShowNewClientModal(false);
-            window.location.reload();
         } catch (error: any) {
             toast.error(error.message || "Erreur lors de la création ❌");
         }
