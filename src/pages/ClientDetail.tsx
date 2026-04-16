@@ -38,6 +38,9 @@ interface ClientData {
   budget: string;
   description: string;
   timeline: TimelineEvent[];
+  vehicle: string;
+  maxKm: string;
+  vehicleColor: string;
 }
 
 interface Vehicle {
@@ -47,12 +50,14 @@ interface Vehicle {
   mileage: number;
   year: number;
   image: string;
+  title: string;
+  link: string;
 }
 
 interface ChecklistItem {
   id: string;
   name: string;
-  status: "validated" | "pending" | "issue";
+  status: "validated" | "pending" | "issue" | "rejected";
   comment?: string;
 }
 
@@ -66,28 +71,17 @@ interface VehicleChecklist {
   checklistItems: ChecklistItem[];
 }
 
-const vehicleChecklistData: VehicleChecklist[] = [
-  {
-    id: "vehicle-1",
-    name: "BMW X3 xDrive30i",
-    price: "€42,500",
-    mileage: 25000,
-    year: 2021,
-    image:
-      "https://images.unsplash.com/photo-1580273916550-e323be2ae537?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80",
-    checklistItems: [
-      { id: "check-1-1", name: "Kilométrage certifié", status: "validated" },
-      { id: "check-1-2", name: "Vidange à jour", status: "validated" },
-      { id: "check-1-3", name: "Distribution vérifiée", status: "validated" },
-      { id: "check-1-4", name: "CarVertical ajouté", status: "validated" },
-      { id: "check-1-5", name: "Contrôle technique à jour", status: "validated" },
-      { id: "check-1-6", name: "Freins vérifiés", status: "validated" },
-      { id: "check-1-7", name: "Pneus vérifiés", status: "validated" },
-      { id: "check-1-8", name: "Climatisation fonctionnelle", status: "validated" },
-      { id: "check-1-9", name: "Batterie testée", status: "validated" },
-    ],
-  },
-];
+const DEFAULT_CHECKLIST_ITEMS = [
+  { name: "Kilométrage certifié", status: "validated" },
+  { name: "Vidange à jour", status: "validated" },
+  { name: "Distribution vérifiée", status: "pending" },
+  { name: "CarVertical ajouté", status: "validated" },
+  { name: "Contrôle technique à jour", status: "validated" },
+  { name: "Freins vérifiés", status: "rejected" },
+  { name: "Pneus vérifiés", status: "validated" },
+  { name: "Climatisation fonctionnelle", status: "validated" },
+  { name: "Batterie testée", status: "pending" }
+] as const;
 
 // --- Composant principal ---
 const ClientDetail: React.FC = () => {
@@ -96,12 +90,12 @@ const ClientDetail: React.FC = () => {
   const [activeTab, setActiveTab] = useState<number>(1);
   const [isReady, setIsReady] = useState(false);
 
-  const [selectedVehicles, setSelectedVehicles] = useState<string[]>([]);
+
   const [depositPaid, setDepositPaid] = useState<boolean>(false);
   const [idCardSent, setIdCardSent] = useState<boolean>(false);
 
   const [vehiclesChecklist, setVehiclesChecklist] =
-    useState<VehicleChecklist[]>(vehicleChecklistData);
+    useState<VehicleChecklist[]>([]);
 
   const [finalPaymentDone, setFinalPaymentDone] = useState<boolean>(false);
   const [selectedChecklistVehicle, setSelectedChecklistVehicle] =
@@ -114,6 +108,7 @@ const ClientDetail: React.FC = () => {
 
   const [vehicleOptions, setVehicleOptions] = useState<Vehicle[]>([]);
   const [vehiclePreSelect, setvehiclePreSelect] = useState<Vehicle[]>([]);
+  console.log(vehiclePreSelect)
   console.log(id);
   // ========== Sync activeTab avec step stocké en BDD ==========
   useEffect(() => {
@@ -147,6 +142,31 @@ const ClientDetail: React.FC = () => {
 
     fetchClient();
   }, [id]);
+
+
+  useEffect(() => {
+    if (!clientData) return;
+    const fetchPreselectedVehicles = async () => {
+      try {
+        const res = await fetch(
+          `http://localhost:3000/api/vehicles/client/${id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+
+        const data = await res.json();
+        setvehiclePreSelect(data);
+        console.log(vehiclePreSelect)
+      } catch (error) {
+        console.error("Erreur fetch preselected:", error);
+      }
+    };
+
+    fetchPreselectedVehicles();
+  }, [clientData]);
 
   // ========== Fetch véhicules dynamiques ==========
   useEffect(() => {
@@ -195,8 +215,26 @@ const ClientDetail: React.FC = () => {
         );
 
         const data = await res.json();
-        console.log(data);
-        setvehiclePreSelect(data);
+
+        // Map data to vehiclesChecklist
+        const mappedChecklist: VehicleChecklist[] = data
+          .filter((v: any) => v.selected_by === 'client')
+          .map((v: any) => ({
+            id: v.id.toString(),
+            name: v.title || v.name, // Handle title or name
+            price: v.price,
+            mileage: typeof v.mileage === 'string' ? parseInt(v.mileage.replace(/\D/g, '')) : v.mileage, // Ensure number
+            year: v.year ? (typeof v.year === 'string' && v.year.includes('/') ? parseInt(v.year.split('/')[1]) : parseInt(v.year)) : 2020, // Parse year if needed
+            image: v.image,
+            checklistItems: (v.checklist || []).map((item: any) => ({
+              id: item.id.toString(),
+              name: item.name,
+              status: item.status === 'rejected' ? 'issue' : item.status, // Map rejected to issue for now
+              comment: item.comment
+            }))
+          }));
+        setVehiclesChecklist(mappedChecklist);
+
       } catch (error) {
         console.error("Erreur fetch preselected:", error);
       }
@@ -205,22 +243,13 @@ const ClientDetail: React.FC = () => {
     fetchPreselectedVehicles();
   }, [clientData]);
 
-  // ========== Sélection véhicules ==========
-  const handleVehicleSelection = (vehicleId: string) => {
-    setSelectedVehicles((prev) =>
-      prev.includes(vehicleId)
-        ? prev.filter((id) => id !== vehicleId)
-        : prev.length < 3
-          ? [...prev, vehicleId]
-          : prev
-    );
-  };
+
 
   // ========== Mise à jour checklists ==========
   const handleChecklistStatusUpdate = (
     vehicleId: string,
     itemId: string,
-    status: "validated" | "pending" | "issue"
+    status: "validated" | "pending" | "issue" | "rejected"
   ) => {
     setVehiclesChecklist((prev) =>
       prev.map((vehicle) =>
@@ -230,6 +259,24 @@ const ClientDetail: React.FC = () => {
             checklistItems: vehicle.checklistItems.map((item) =>
               item.id === itemId ? { ...item, status } : item
             ),
+          }
+          : vehicle
+      )
+    );
+  };
+
+  const handleInitializeChecklist = (vehicleId: string) => {
+    setVehiclesChecklist((prev) =>
+      prev.map((vehicle) =>
+        vehicle.id === vehicleId
+          ? {
+            ...vehicle,
+            checklistItems: DEFAULT_CHECKLIST_ITEMS.map((item, index) => ({
+              id: `new-${vehicleId}-${index}`,
+              name: item.name,
+              status: item.status === 'rejected' ? 'issue' : item.status as "validated" | "pending" | "issue",
+              comment: ""
+            })),
           }
           : vehicle
       )
@@ -256,8 +303,10 @@ const ClientDetail: React.FC = () => {
   };
 
   // ========== Utilitaire format ==========  
-  const formatMileage = (mileage: number): string =>
-    mileage.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  const formatMileage = (mileage: number | string | undefined | null): string => {
+    if (mileage === undefined || mileage === null) return "N/A";
+    return mileage.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  };
 
   const selectedVehicle = selectedChecklistVehicle
     ? vehiclesChecklist.find((v) => v.id === selectedChecklistVehicle)
@@ -272,7 +321,7 @@ const ClientDetail: React.FC = () => {
   // ========== Rendu principal ==========
   return (
     <div className="space-y-6">
-      <Breadcrumb clientId={id} clientName={clientData.name} />
+      <Breadcrumb clientId={id || ""} clientName={clientData.name} />
 
       <ClientHeader clientData={clientData} />
 
@@ -286,15 +335,13 @@ const ClientDetail: React.FC = () => {
                 <ClientInfoTab
                   clientData={clientData}
                   vehicleOptions={vehicleOptions}
-                  formatMileage={(n) => n.toString()}
+                  formatMileage={(n) => n ? n.toString() : "N/A"}
                 />
               )}
 
               {activeTab === 2 && (
                 <ClientSelectionTab
                   vehicleOptions={vehiclePreSelect}
-                  selectedVehicles={selectedVehicles}
-                  handleVehicleSelection={handleVehicleSelection}
                   formatMileage={formatMileage}
                 />
               )}
@@ -305,6 +352,7 @@ const ClientDetail: React.FC = () => {
                   setDepositPaid={setDepositPaid}
                   idCardSent={idCardSent}
                   setIdCardSent={setIdCardSent}
+                  clientIdentity={{}}
                 />
               )}
 
@@ -334,6 +382,41 @@ const ClientDetail: React.FC = () => {
         <VehicleChecklistModal
           isOpen={!!selectedChecklistVehicle}
           onClose={() => setSelectedChecklistVehicle(null)}
+          onInitialize={() => {
+            if (selectedVehicle) {
+              handleInitializeChecklist(selectedVehicle.id);
+            }
+          }}
+          onSave={async () => {
+            if (!selectedVehicle) return;
+            try {
+              const payload = {
+                checks: selectedVehicle.checklistItems.map(item => ({
+                  name: item.name,
+                  status: item.status === 'issue' ? 'rejected' : item.status // Map issue back to rejected for API
+                }))
+              };
+
+              const res = await fetch(`http://localhost:3000/api/clients/vehicle/${selectedVehicle.id}/checks`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
+                body: JSON.stringify(payload)
+              });
+
+              if (!res.ok) {
+                throw new Error('Failed to save checklist');
+              }
+
+              // Optional: Show success message or refresh data
+              console.log('Checklist saved successfully');
+            } catch (error) {
+              console.error('Error saving checklist:', error);
+              alert('Erreur lors de la sauvegarde de la checklist');
+            }
+          }}
           vehicleName={selectedVehicle.name}
           vehicleImage={selectedVehicle.image}
           vehicleYear={selectedVehicle.year}

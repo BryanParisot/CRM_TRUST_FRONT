@@ -4,7 +4,7 @@ import VehicleChecklistCard from './VehicleChecklistCard';
 interface ChecklistItem {
   id: string;
   name: string;
-  status: 'validated' | 'pending' | 'issue';
+  status: 'validated' | 'pending' | 'issue' | 'rejected';
   comment?: string;
 }
 

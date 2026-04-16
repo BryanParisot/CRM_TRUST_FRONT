@@ -17,7 +17,7 @@ import { restrictToParentElement } from "@dnd-kit/modifiers";
 import KanbanColumn from "./KanbanColumn";
 import KanbanCard from "./KanbanCard";
 import { PlusIcon, RefreshCwIcon } from "lucide-react";
-import NewClientModal from "./NewClientModal";
+import NewClientModal, { ClientSubmissionData } from "./NewClientModal";
 import toast from "react-hot-toast";
 import { motion } from "framer-motion";
 
@@ -143,18 +143,36 @@ const KanbanBoard: React.FC = () => {
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
 
-  const addClient = (
-    newClient: Omit<Client, "id" | "step" | "progress" | "hasNotification">
-  ) => {
-    const client: Client = {
-      id: Date.now(),
-      step: 1,
-      progress: 0,
-      hasNotification: false,
-      ...newClient,
-    };
-    setClients([...clients, client]);
-    closeModal();
+  const addClient = async (newClientData: ClientSubmissionData) => {
+    try {
+      const res = await fetch("http://localhost:3000/api/clients", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify(newClientData),
+      });
+
+      if (!res.ok) throw new Error("Erreur lors de la création du client");
+
+      const createdClient = await res.json();
+
+      // Ensure the new client has necessary fields for the board
+      const clientToAdd: Client = {
+        step: 1,
+        progress: 0,
+        hasNotification: false,
+        ...createdClient,
+      };
+
+      setClients((prev) => [...prev, clientToAdd]);
+      toast.success("✅ Client créé avec succès !");
+      closeModal();
+    } catch (error) {
+      console.error(error);
+      toast.error("❌ Erreur lors de la création du client");
+    }
   };
 
   return (

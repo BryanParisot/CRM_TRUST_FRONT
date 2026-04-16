@@ -1,74 +1,73 @@
 import {
     CheckCircle2Icon,
     ShieldCheckIcon,
-    AlertTriangleIcon,
-    CarIcon,
-    ArrowRightIcon
+    ArrowRightIcon,
+    XCircleIcon,
+    AlertCircleIcon
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import ClientVehicleCard, { Vehicle } from "../components/ClientVehicleCard";
 import ClientSelectionLoadingModal from "../components/ClientSelectionLoadingModal";
 
-// Mock checklist data
-const MOCK_CHECKLIST = [
-    { id: "check-1-1", name: "Kilométrage certifié", status: "validated" },
-    { id: "check-1-2", name: "Vidange à jour", status: "validated" },
-    { id: "check-1-3", name: "Distribution vérifiée", status: "validated" },
-    { id: "check-1-4", name: "CarVertical ajouté", status: "validated" },
-    { id: "check-1-5", name: "Contrôle technique à jour", status: "validated" },
-    { id: "check-1-6", name: "Freins vérifiés", status: "validated" },
-    { id: "check-1-7", name: "Pneus vérifiés", status: "validated" },
-    { id: "check-1-8", name: "Climatisation fonctionnelle", status: "validated" },
-    { id: "check-1-9", name: "Batterie testée", status: "validated" },
-];
+interface PublicChecklistItem {
+    id: number;
+    name: string;
+    status: "validated" | "pending" | "issue" | "rejected";
+}
 
-// Mock vehicles data
-const MOCK_VEHICLES: Vehicle[] = [
-    {
-        id: 101,
-        title: "Audi A3 Sportback S-Line",
-        price: "24 900 €",
-        mileage: "45 000 km",
-        year: "2020",
-        fuel: "Diesel",
-        gearbox: "Automatique",
-        power: "150",
-        image: "https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-        link: "#",
-    },
-    {
-        id: 102,
-        title: "BMW Série 1 M Sport",
-        price: "26 500 €",
-        mileage: "38 000 km",
-        year: "2021",
-        fuel: "Essence",
-        gearbox: "Automatique",
-        power: "140",
-        image: "https://images.unsplash.com/photo-1556189250-72ba954522af?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-        link: "#",
-    },
-    {
-        id: 103,
-        title: "Mercedes Classe A AMG Line",
-        price: "28 900 €",
-        mileage: "25 000 km",
-        year: "2022",
-        fuel: "Hybride",
-        gearbox: "Automatique",
-        power: "163",
-        image: "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-        link: "#",
-    }
-];
+interface PublicVehicle extends Vehicle {
+    client_id: number;
+    checklist: PublicChecklistItem[];
+}
+
+interface PublicClientData {
+    id: number;
+    name: string;
+    email: string;
+    phone: string;
+    step: number;
+}
+
+interface PublicApiResponse {
+    client: PublicClientData;
+    vehicles: PublicVehicle[];
+}
 
 export default function ClientChecklistPage() {
     const { token } = useParams();
     const [selectedVehicleId, setSelectedVehicleId] = useState<number | null>(null);
     const [confirming, setConfirming] = useState(false);
     const [showLoadingModal, setShowLoadingModal] = useState(false);
+
+    const [clientData, setClientData] = useState<PublicClientData | null>(null);
+    const [vehicles, setVehicles] = useState<PublicVehicle[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const response = await fetch(`http://localhost:3000/api/clients/public/${token}`);
+                if (!response.ok) {
+                    throw new Error("Erreur lors du chargement des données");
+                }
+                const data: PublicApiResponse = await response.json();
+                setClientData(data.client);
+                setVehicles(data.vehicles);
+            } catch (err) {
+                console.error(err);
+                setError("Impossible de charger les véhicules. Veuillez vérifier votre lien.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (token) {
+            fetchData();
+        }
+    }, [token]);
 
     const handleSelect = (id: number) => {
         setSelectedVehicleId(id);
@@ -88,6 +87,51 @@ export default function ClientChecklistPage() {
         }, 1500);
     };
 
+    const getStatusIcon = (status: string) => {
+        switch (status) {
+            case 'validated':
+                return <CheckCircle2Icon className="w-4 h-4 text-green-600" />;
+            case 'pending':
+                return <AlertCircleIcon className="w-4 h-4 text-yellow-500" />;
+            case 'issue':
+                return <AlertCircleIcon className="w-4 h-4 text-orange-500" />;
+            case 'rejected':
+                return <XCircleIcon className="w-4 h-4 text-red-500" />;
+            default:
+                return <div className="w-4 h-4 rounded-full bg-gray-200" />;
+        }
+    };
+
+    const getStatusBgColor = (status: string) => {
+        switch (status) {
+            case 'validated': return 'bg-green-100';
+            case 'pending': return 'bg-yellow-100';
+            case 'issue': return 'bg-orange-100';
+            case 'rejected': return 'bg-red-100';
+            default: return 'bg-gray-100';
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+                <div className="bg-white p-8 rounded-xl shadow-lg text-center max-w-md">
+                    <XCircleIcon className="w-16 h-16 text-red-500 mx-auto mb-4" />
+                    <h2 className="text-xl font-bold text-gray-900 mb-2">Une erreur est survenue</h2>
+                    <p className="text-gray-600">{error}</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <>
             <ClientSelectionLoadingModal
@@ -102,7 +146,7 @@ export default function ClientChecklistPage() {
                     {/* HEADER */}
                     <div className="text-center space-y-3">
                         <h1 className="text-3xl font-bold text-gray-900">
-                            Validation finale du véhicule 🚗
+                            Bonjour {clientData?.name.split(' ')[0]} 👋
                         </h1>
                         <p className="text-gray-600 max-w-2xl mx-auto">
                             Voici les véhicules que nous avons audités pour vous.
@@ -121,7 +165,7 @@ export default function ClientChecklistPage() {
 
                     {/* VEHICLES & CHECKLISTS */}
                     <div className="grid lg:grid-cols-3 gap-8">
-                        {MOCK_VEHICLES.map((vehicle) => {
+                        {vehicles.map((vehicle) => {
                             const isSelected = selectedVehicleId === vehicle.id;
 
                             return (
@@ -146,14 +190,18 @@ export default function ClientChecklistPage() {
                                         </h3>
 
                                         <ul className="space-y-3">
-                                            {MOCK_CHECKLIST.map((item) => (
-                                                <li key={item.id} className="flex items-start gap-2.5 text-sm text-gray-700">
-                                                    <div className="mt-0.5 w-4 h-4 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                                                        <CheckCircle2Icon className="w-3 h-3 text-green-600" />
-                                                    </div>
-                                                    <span className="leading-tight">{item.name}</span>
-                                                </li>
-                                            ))}
+                                            {vehicle.checklist && vehicle.checklist.length > 0 ? (
+                                                vehicle.checklist.map((item) => (
+                                                    <li key={item.id} className="flex items-start gap-2.5 text-sm text-gray-700">
+                                                        <div className={`mt-0.5 w-4 h-4 rounded-full ${getStatusBgColor(item.status)} flex items-center justify-center flex-shrink-0`}>
+                                                            {getStatusIcon(item.status)}
+                                                        </div>
+                                                        <span className="leading-tight">{item.name}</span>
+                                                    </li>
+                                                ))
+                                            ) : (
+                                                <li className="text-sm text-gray-500 italic">Aucun point de contrôle disponible.</li>
+                                            )}
                                         </ul>
 
                                         <button
