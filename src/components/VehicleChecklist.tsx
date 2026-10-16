@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CheckIcon, XIcon, AlertCircleIcon } from 'lucide-react';
+import { CHECKLIST_STATUS_LABELS } from '../utils/vehicleChecklist';
 export interface ChecklistItem {
   id: string;
   name: string;
@@ -55,20 +56,20 @@ const ChecklistItemRow: React.FC<ChecklistItemRowProps> = ({
   return <div className="px-4 py-3">
     <div className="flex items-center justify-between">
       <div className="flex items-center">
-        <span className="mr-3">{getStatusIcon(item.status)}</span>
+        <span className="mr-3" title={CHECKLIST_STATUS_LABELS[item.status]} aria-label={CHECKLIST_STATUS_LABELS[item.status]}>{getStatusIcon(item.status)}</span>
         <span>{item.name}</span>
       </div>
       <div className="flex items-center space-x-2">
-        <button className={`w-8 h-8 rounded-full flex items-center justify-center ${item.status === 'validated' ? 'bg-green-100 dark:bg-green-900' : 'bg-gray-100 dark:bg-gray-700'}`} onClick={() => onUpdateStatus(item.id, 'validated')}>
+        <button title={CHECKLIST_STATUS_LABELS.validated} aria-label={`${item.name} : ${CHECKLIST_STATUS_LABELS.validated}`} aria-pressed={item.status==='validated'} className={`w-8 h-8 rounded-full flex items-center justify-center ${item.status === 'validated' ? 'bg-green-100 dark:bg-green-900' : 'bg-gray-100 dark:bg-gray-700'}`} onClick={() => onUpdateStatus(item.id, 'validated')}>
           <CheckIcon className="w-4 h-4 text-green-600 dark:text-green-400" />
         </button>
-        <button className={`w-8 h-8 rounded-full flex items-center justify-center ${item.status === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900' : 'bg-gray-100 dark:bg-gray-700'}`} onClick={() => onUpdateStatus(item.id, 'pending')}>
+        <button title={CHECKLIST_STATUS_LABELS.pending} aria-label={`${item.name} : ${CHECKLIST_STATUS_LABELS.pending}`} aria-pressed={item.status==='pending'} className={`w-8 h-8 rounded-full flex items-center justify-center ${item.status === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900' : 'bg-gray-100 dark:bg-gray-700'}`} onClick={() => onUpdateStatus(item.id, 'pending')}>
           <AlertCircleIcon className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
         </button>
-        <button className={`w-8 h-8 rounded-full flex items-center justify-center ${item.status === 'issue' ? 'bg-orange-100 dark:bg-orange-900' : 'bg-gray-100 dark:bg-gray-700'}`} onClick={() => onUpdateStatus(item.id, 'issue')}>
+        <button title={CHECKLIST_STATUS_LABELS.issue} aria-label={`${item.name} : ${CHECKLIST_STATUS_LABELS.issue}`} aria-pressed={item.status==='issue'} className={`w-8 h-8 rounded-full flex items-center justify-center ${item.status === 'issue' ? 'bg-orange-100 dark:bg-orange-900' : 'bg-gray-100 dark:bg-gray-700'}`} onClick={() => onUpdateStatus(item.id, 'issue')}>
           <AlertCircleIcon className="w-4 h-4 text-orange-600 dark:text-orange-400" />
         </button>
-        <button className={`w-8 h-8 rounded-full flex items-center justify-center ${item.status === 'rejected' ? 'bg-red-100 dark:bg-red-900' : 'bg-gray-100 dark:bg-gray-700'}`} onClick={() => onUpdateStatus(item.id, 'rejected')}>
+        <button title={CHECKLIST_STATUS_LABELS.rejected} aria-label={`${item.name} : ${CHECKLIST_STATUS_LABELS.rejected}`} aria-pressed={item.status==='rejected'} className={`w-8 h-8 rounded-full flex items-center justify-center ${item.status === 'rejected' ? 'bg-red-100 dark:bg-red-900' : 'bg-gray-100 dark:bg-gray-700'}`} onClick={() => onUpdateStatus(item.id, 'rejected')}>
           <XIcon className="w-4 h-4 text-red-600 dark:text-red-400" />
         </button>
         <button className="text-xs text-blue-600 dark:text-blue-400 underline" onClick={() => setShowComment(!showComment)}>

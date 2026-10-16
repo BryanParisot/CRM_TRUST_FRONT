@@ -1,11 +1,11 @@
-import React from 'react';
+import React, {useState} from 'react';
 import { ExternalLink, XIcon } from 'lucide-react';
 import VehicleChecklist, { ChecklistItem } from './VehicleChecklist';
 import { matchesChecklistTemplate } from '../utils/vehicleChecklist';
 export interface VehicleChecklistModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: () => void;
+  onSave: () => Promise<boolean>;
   onInitialize: () => void;
   vehicleName: string;
   vehicleLink: string | null;
@@ -24,6 +24,7 @@ const VehicleChecklistModal: React.FC<VehicleChecklistModalProps> = ({
   onUpdateStatus,
   onUpdateComment
 }) => {
+  const [saving,setSaving]=useState(false);
   if (!isOpen) return null;
   // Count validated, pending and issue items
   const validated = checklistItems.filter(item => item.status === 'validated').length;
@@ -32,11 +33,11 @@ const VehicleChecklistModal: React.FC<VehicleChecklistModalProps> = ({
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-3xl mx-4 max-h-[90vh] flex flex-col">
       <div className="flex justify-between items-center p-4 border-b dark:border-gray-700">
         <h2 className="text-lg font-semibold">Checklist Technique</h2>
-        <button aria-label="Fermer la checklist" onClick={onClose} className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none">
+        <button disabled={saving} aria-label="Fermer la checklist" onClick={onClose} className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none disabled:opacity-50">
           <XIcon className="w-5 h-5" />
         </button>
       </div>
-      <div className="overflow-y-auto p-4">
+      <fieldset disabled={saving} className="min-w-0 overflow-y-auto p-4">
         <div className="flex items-start mb-6">
           <div className="min-w-0">
             <h3 className="font-medium text-lg">{vehicleName}</h3>
@@ -71,13 +72,13 @@ const VehicleChecklistModal: React.FC<VehicleChecklistModalProps> = ({
             <VehicleChecklist vehicleName={vehicleName} checklistItems={checklistItems} onUpdateStatus={onUpdateStatus} onUpdateComment={onUpdateComment} />
           )}
         </div>
-      </div>
+      </fieldset>
       <div className="p-4 border-t dark:border-gray-700 flex justify-end">
-        <button onClick={() => {
-          onSave();
-          onClose();
-        }} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-          Fermer et Enregistrer
+        <button disabled={saving} onClick={async () => {
+          setSaving(true);
+          try{if(await onSave())onClose();}finally{setSaving(false);}
+        }} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">
+          {saving?'Enregistrement…':'Fermer et Enregistrer'}
         </button>
       </div>
     </div>

@@ -155,7 +155,7 @@ const ClientDetail: React.FC = () => {
             checklistItems: (v.checklist || []).map((item: any) => ({
               id: item.id.toString(),
               name: item.name,
-              status: item.status === 'rejected' ? 'issue' : item.status, // Map rejected to issue for now
+              status: item.status,
               comment: item.comment
             }))
           }));
@@ -309,12 +309,12 @@ const ClientDetail: React.FC = () => {
             }
           }}
           onSave={async () => {
-            if (!selectedVehicle) return;
+            if (!selectedVehicle) return false;
             try {
               const payload = {
                 checks: selectedVehicle.checklistItems.map(item => ({
                   name: item.name,
-                  status: item.status === 'issue' ? 'rejected' : item.status // Map issue back to rejected for API
+                  status: item.status
                 }))
               };
 
@@ -333,9 +333,11 @@ const ClientDetail: React.FC = () => {
 
               // Optional: Show success message or refresh data
               console.log('Checklist saved successfully');
+              return true;
             } catch (error) {
               console.error('Error saving checklist:', error);
               alert('Erreur lors de la sauvegarde de la checklist');
+              return false;
             }
           }}
           vehicleName={selectedVehicle.name}

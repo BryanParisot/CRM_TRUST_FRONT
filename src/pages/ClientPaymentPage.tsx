@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { clientPortalPath } from '../utils/clientPortal';
+import { availableClientDocuments } from '../utils/clientDocuments';
 import { Check, ExternalLink, ArrowRight, Copy, FileText, Upload, Loader2, ShieldCheck, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -137,7 +138,7 @@ export default function ClientPaymentPage() {
         <h2 className="text-xl font-semibold">Réglez votre acompte</h2>
         <p className="text-3xl font-bold text-blue-600">{Number(data.client.deposit_amount).toLocaleString('fr-FR',{style:'currency',currency:'EUR'})}</p>
         {data.vehicles.length>0&&<div className="space-y-2"><p className="text-sm text-gray-500">Véhicules retenus</p>{data.vehicles.map((v:any)=><a key={v.id} href={v.link} target="_blank" rel="noopener noreferrer" className="block text-sm text-blue-600 break-all">{v.title} — {v.link}</a>)}</div>}
-        {data.payment_confirmed_at?<div className="rounded-xl bg-green-50 p-4"><p className="text-green-700">Paiement confirmé par votre conseiller.</p><Link to={`/client-link/${token}/documents`} className="block mt-3 text-blue-600 underline">Retrouver ma facture et mes CGV</Link></div>:<>
+        {data.payment_confirmed_at?<div className="rounded-xl bg-green-50 p-4"><p className="text-green-700">Paiement confirmé par votre conseiller.</p>{availableClientDocuments(data).length>0&&<Link to={`/client-link/${token}/documents`} className="block mt-3 text-blue-600 underline">Consulter mes documents</Link>}</div>:<>
           <div className="rounded-xl bg-gray-50 p-4 space-y-3 text-sm"><p>Bénéficiaire : <strong>AUTOIMPORT FRANCE</strong></p><p className="break-all">IBAN : <strong>FR76 1027 8065 0200 0102 0410 182</strong><button aria-label="Copier l’IBAN" className="ml-2" onClick={async()=>{try{await navigator.clipboard.writeText('FR76 1027 8065 0200 0102 0410 182');toast.success('IBAN copié.');}catch{toast.error('Copiez l’IBAN manuellement.');}}}><Copy size={16}/></button></p><p>BIC : <strong>CMCIFR2A</strong></p></div>
           {data.payment_declared_at?<p className="rounded-lg bg-blue-50 p-4 text-sm text-blue-800">Votre déclaration a été reçue. Nous attendons la confirmation de réception du virement par votre conseiller.</p>:<button disabled={busy} onClick={declare} className="rounded-lg bg-blue-600 text-white px-5 py-3 disabled:opacity-40">{busy?'Enregistrement…':'J’ai effectué le virement'}</button>}
           <p className="text-xs text-gray-500">Votre facture sera disponible dans « Mes documents » après confirmation du paiement.</p>

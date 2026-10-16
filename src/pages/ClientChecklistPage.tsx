@@ -2,16 +2,17 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AlertCircle, Car, Check, Clock3, ExternalLink, Loader2, Minus, ShieldCheck, X } from 'lucide-react';
 import { clientPortalPath } from '../utils/clientPortal';
+import { CHECKLIST_STATUS_LABELS } from '../utils/vehicleChecklist';
 
 interface ChecklistItem { id: number; name: string; status: string; }
 interface Vehicle { id: number; title: string | null; link: string | null; selected_by: string; checklist: ChecklistItem[]; }
 interface Dossier { client: { name: string; step: number }; vehicles: Vehicle[]; }
 const statuses = {
-  validated: { label: 'Validé', icon: Check, color: 'bg-emerald-50 text-emerald-700' },
-  pending: { label: 'À vérifier', icon: Clock3, color: 'bg-gray-100 text-gray-500' },
-  issue: { label: 'Point à vérifier', icon: AlertCircle, color: 'bg-amber-50 text-amber-700' },
-  rejected: { label: 'Non validé', icon: X, color: 'bg-red-50 text-red-700' },
-  not_applicable: { label: 'Non applicable', icon: Minus, color: 'bg-gray-100 text-gray-500' },
+  validated: { label: CHECKLIST_STATUS_LABELS.validated, icon: Check, color: 'bg-emerald-50 text-emerald-700' },
+  pending: { label: CHECKLIST_STATUS_LABELS.pending, icon: Clock3, color: 'bg-gray-100 text-gray-500' },
+  issue: { label: CHECKLIST_STATUS_LABELS.issue, icon: AlertCircle, color: 'bg-orange-50 text-orange-700' },
+  rejected: { label: CHECKLIST_STATUS_LABELS.rejected, icon: X, color: 'bg-red-50 text-red-700' },
+  not_applicable: { label: CHECKLIST_STATUS_LABELS.not_applicable, icon: Minus, color: 'bg-gray-100 text-gray-500' },
 };
 
 export default function ClientChecklistPage() {
