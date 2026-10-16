@@ -1,252 +1,88 @@
-import {
-    CheckCircle2Icon,
-    ShieldCheckIcon,
-    ArrowRightIcon,
-    XCircleIcon,
-    AlertCircleIcon
-} from "lucide-react";
-import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
-import toast from "react-hot-toast";
-import ClientVehicleCard, { Vehicle } from "../components/ClientVehicleCard";
-import ClientSelectionLoadingModal from "../components/ClientSelectionLoadingModal";
+import { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { AlertCircle, Car, Check, Clock3, ExternalLink, Loader2, Minus, ShieldCheck, X } from 'lucide-react';
+import { clientPortalPath } from '../utils/clientPortal';
 
-interface PublicChecklistItem {
-    id: number;
-    name: string;
-    status: "validated" | "pending" | "issue" | "rejected";
-}
-
-interface PublicVehicle extends Vehicle {
-    client_id: number;
-    checklist: PublicChecklistItem[];
-}
-
-interface PublicClientData {
-    id: number;
-    name: string;
-    email: string;
-    phone: string;
-    step: number;
-}
-
-interface PublicApiResponse {
-    client: PublicClientData;
-    vehicles: PublicVehicle[];
-}
+interface ChecklistItem { id: number; name: string; status: string; }
+interface Vehicle { id: number; title: string | null; link: string | null; selected_by: string; checklist: ChecklistItem[]; }
+interface Dossier { client: { name: string; step: number }; vehicles: Vehicle[]; }
+const statuses = {
+  validated: { label: 'Validé', icon: Check, color: 'bg-emerald-50 text-emerald-700' },
+  pending: { label: 'À vérifier', icon: Clock3, color: 'bg-gray-100 text-gray-500' },
+  issue: { label: 'Point à vérifier', icon: AlertCircle, color: 'bg-amber-50 text-amber-700' },
+  rejected: { label: 'Non validé', icon: X, color: 'bg-red-50 text-red-700' },
+  not_applicable: { label: 'Non applicable', icon: Minus, color: 'bg-gray-100 text-gray-500' },
+};
 
 export default function ClientChecklistPage() {
-    const { token } = useParams();
-    const [selectedVehicleId, setSelectedVehicleId] = useState<number | null>(null);
-    const [confirming, setConfirming] = useState(false);
-    const [showLoadingModal, setShowLoadingModal] = useState(false);
-
-    const [clientData, setClientData] = useState<PublicClientData | null>(null);
-    const [vehicles, setVehicles] = useState<PublicVehicle[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const response = await fetch(`http://localhost:3000/api/clients/public/${token}`);
-                if (!response.ok) {
-                    throw new Error("Erreur lors du chargement des données");
-                }
-                const data: PublicApiResponse = await response.json();
-                setClientData(data.client);
-                setVehicles(data.vehicles);
-            } catch (err) {
-                console.error(err);
-                setError("Impossible de charger les véhicules. Veuillez vérifier votre lien.");
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        if (token) {
-            fetchData();
+  const { token } = useParams();
+  const navigate = useNavigate();
+  const [data, setData] = useState<Dossier | null>(null);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [attempt, setAttempt] = useState(0);
+  const previousStep = useRef<number|null>(null);
+  useEffect(() => {
+    const controller = new AbortController();
+    let fetching = false;
+    setData(null); setLoading(true); setError(''); previousStep.current=null;
+    const refresh = async () => {
+      if (fetching) return;
+      fetching = true;
+      try {
+        const response = await fetch(`http://localhost:3000/api/clients/public/${token}`, { signal: controller.signal, cache: 'no-store' });
+        const value: Dossier & { message?: string } = await response.json();
+        if (!response.ok) {
+          if (response.status === 404 && !controller.signal.aborted) setData(null);
+          throw new Error(value.message || 'Impossible de mettre à jour les contrôles.');
         }
-    }, [token]);
-
-    const handleSelect = (id: number) => {
-        setSelectedVehicleId(id);
+        if (controller.signal.aborted) return;
+        if (value.client.step < 4) { navigate(clientPortalPath(token!, value.client.step), { replace: true }); return; }
+        if (previousStep.current===4 && value.client.step>=5) { navigate(clientPortalPath(token!, value.client.step), { replace:true }); return; }
+        previousStep.current=value.client.step;
+        setData(value); setError('');
+      } catch (error) {
+        if (!controller.signal.aborted) setError((error as Error).message);
+      } finally {
+        fetching = false;
+        if (!controller.signal.aborted) setLoading(false);
+      }
     };
+    refresh();
+    const timer = setInterval(refresh, 5000);
+    window.addEventListener('focus', refresh);
+    return () => { controller.abort(); clearInterval(timer); window.removeEventListener('focus', refresh); };
+  }, [token, navigate, attempt]);
 
-    const handleConfirm = async () => {
-        if (!selectedVehicleId) {
-            toast.error("Veuillez sélectionner un véhicule.");
-            return;
-        }
-
-        setConfirming(true);
-        // Simulate API call
-        setTimeout(() => {
-            setConfirming(false);
-            setShowLoadingModal(true);
-        }, 1500);
-    };
-
-    const getStatusIcon = (status: string) => {
-        switch (status) {
-            case 'validated':
-                return <CheckCircle2Icon className="w-4 h-4 text-green-600" />;
-            case 'pending':
-                return <AlertCircleIcon className="w-4 h-4 text-yellow-500" />;
-            case 'issue':
-                return <AlertCircleIcon className="w-4 h-4 text-orange-500" />;
-            case 'rejected':
-                return <XCircleIcon className="w-4 h-4 text-red-500" />;
-            default:
-                return <div className="w-4 h-4 rounded-full bg-gray-200" />;
-        }
-    };
-
-    const getStatusBgColor = (status: string) => {
-        switch (status) {
-            case 'validated': return 'bg-green-100';
-            case 'pending': return 'bg-yellow-100';
-            case 'issue': return 'bg-orange-100';
-            case 'rejected': return 'bg-red-100';
-            default: return 'bg-gray-100';
-        }
-    };
-
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-                <div className="bg-white p-8 rounded-xl shadow-lg text-center max-w-md">
-                    <XCircleIcon className="w-16 h-16 text-red-500 mx-auto mb-4" />
-                    <h2 className="text-xl font-bold text-gray-900 mb-2">Une erreur est survenue</h2>
-                    <p className="text-gray-600">{error}</p>
-                </div>
-            </div>
-        );
-    }
-
-    return (
-        <>
-            <ClientSelectionLoadingModal
-                isOpen={showLoadingModal}
-                onFinish={() => {
-                    window.location.href = `/client-link/${token}/success`;
-                }}
-            />
-            <div className="min-h-screen bg-gray-50 py-10 px-4 flex flex-col items-center">
-                <div className="w-full max-w-6xl space-y-8">
-
-                    {/* HEADER */}
-                    <div className="text-center space-y-3">
-                        <h1 className="text-3xl font-bold text-gray-900">
-                            Bonjour {clientData?.name.split(' ')[0]} 👋
-                        </h1>
-                        <p className="text-gray-600 max-w-2xl mx-auto">
-                            Voici les véhicules que nous avons audités pour vous.
-                            Consultez les points de contrôle validés et choisissez celui que vous souhaitez importer.
-                        </p>
-                    </div>
-
-                    {/* RASSURANCE BANNER */}
-                    <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start gap-3 text-green-800 text-sm">
-                        <ShieldCheckIcon className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                        <div>
-                            <strong>Inspection complète effectuée :</strong> Tous les véhicules ci-dessous ont passé avec succès
-                            notre checklist de sécurité et de qualité. Vous pouvez choisir en toute confiance.
-                        </div>
-                    </div>
-
-                    {/* VEHICLES & CHECKLISTS */}
-                    <div className="grid lg:grid-cols-3 gap-8">
-                        {vehicles.map((vehicle) => {
-                            const isSelected = selectedVehicleId === vehicle.id;
-
-                            return (
-                                <div
-                                    key={vehicle.id}
-                                    className={`flex flex-col gap-4 transition-all duration-300 ${isSelected ? 'transform scale-[1.02]' : 'opacity-90 hover:opacity-100'}`}
-                                >
-                                    {/* VEHICLE CARD */}
-                                    <div onClick={() => handleSelect(vehicle.id)}>
-                                        <ClientVehicleCard
-                                            vehicle={vehicle}
-                                            isSelected={isSelected}
-                                            readOnly={true} // We handle selection via wrapper click to style the whole column
-                                        />
-                                    </div>
-
-                                    {/* CHECKLIST */}
-                                    <div className={`bg-white rounded-xl shadow-sm border p-5 flex-1 ${isSelected ? 'border-blue-500 ring-1 ring-blue-500' : 'border-gray-200'}`}>
-                                        <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                                            <CheckCircle2Icon className="w-5 h-5 text-green-600" />
-                                            Points de contrôle
-                                        </h3>
-
-                                        <ul className="space-y-3">
-                                            {vehicle.checklist && vehicle.checklist.length > 0 ? (
-                                                vehicle.checklist.map((item) => (
-                                                    <li key={item.id} className="flex items-start gap-2.5 text-sm text-gray-700">
-                                                        <div className={`mt-0.5 w-4 h-4 rounded-full ${getStatusBgColor(item.status)} flex items-center justify-center flex-shrink-0`}>
-                                                            {getStatusIcon(item.status)}
-                                                        </div>
-                                                        <span className="leading-tight">{item.name}</span>
-                                                    </li>
-                                                ))
-                                            ) : (
-                                                <li className="text-sm text-gray-500 italic">Aucun point de contrôle disponible.</li>
-                                            )}
-                                        </ul>
-
-                                        <button
-                                            onClick={() => handleSelect(vehicle.id)}
-                                            className={`w-full mt-6 py-2.5 rounded-lg font-medium text-sm transition-all duration-200
-                                            ${isSelected
-                                                    ? 'bg-blue-600 text-white shadow-md hover:bg-blue-700'
-                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                                }`}
-                                        >
-                                            {isSelected ? 'Véhicule sélectionné' : 'Choisir ce véhicule'}
-                                        </button>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-
-                    {/* CONFIRMATION ACTION */}
-                    <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 shadow-lg lg:static lg:bg-transparent lg:border-none lg:shadow-none lg:p-0 flex justify-center mt-12">
-                        <button
-                            onClick={handleConfirm}
-                            disabled={!selectedVehicleId || confirming}
-                            className={`
-                            px-8 py-4 rounded-xl font-bold text-lg shadow-xl flex items-center gap-3 transition-all transform
-                            ${selectedVehicleId
-                                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:scale-105 hover:shadow-2xl'
-                                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                }
-                        `}
-                        >
-                            {confirming ? 'Validation en cours...' : (
-                                <>
-                                    Valider mon choix final
-                                    <ArrowRightIcon className="w-6 h-6" />
-                                </>
-                            )}
-                        </button>
-                    </div>
-
-                    {/* Spacer for mobile fixed bottom bar */}
-                    <div className="h-24 lg:hidden"></div>
-
-                </div>
-            </div>
-        </>
-    );
+  if (loading) return <main className="flex min-h-screen items-center justify-center gap-2 bg-gray-50 p-6 text-sm text-gray-500"><Loader2 size={18} className="animate-spin motion-reduce:animate-none"/>Chargement des contrôles…</main>;
+  if (!data) return <main className="flex min-h-screen items-center justify-center bg-gray-50 p-6"><div className="max-w-md rounded-2xl border border-gray-200 bg-white p-6 text-center"><p role="alert" className="text-sm text-red-600">{error || 'Dossier indisponible.'}</p><button onClick={() => setAttempt(value => value + 1)} className="mt-4 text-sm font-semibold text-blue-600">Réessayer</button></div></main>;
+  const vehicles = data.vehicles.filter(vehicle => vehicle.selected_by === 'client');
+  return <main className="px-4 py-6 text-gray-900 sm:py-8"><div className="mx-auto max-w-3xl space-y-6">
+    <section className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-7">
+      <div className="flex items-start gap-4"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600"><ShieldCheck size={23}/></span><div><p className="text-xs font-semibold uppercase tracking-widest text-blue-600">Étape 4 · Contrôles</p><h1 className="mt-2 text-xl font-semibold">Le suivi des contrôles</h1><p className="mt-2 text-sm leading-6 text-gray-500">Retrouvez les vérifications enregistrées par votre conseiller pour les véhicules que vous avez retenus.</p></div></div>
+      <p className="mt-5 border-t border-gray-100 pt-4 text-xs text-gray-400">Mise à jour automatique toutes les 5 secondes.</p>
+      {data.client.step > 4 && <Link to={`/client-link/${token}`} className="mt-4 inline-block text-sm font-medium text-blue-600">Revenir à l’étape actuelle de mon dossier →</Link>}
+    </section>
+    {error && <p role="alert" className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800"><AlertCircle size={18} className="shrink-0"/>{error} Les derniers contrôles reçus restent affichés.</p>}
+    {!vehicles.length && <section className="rounded-2xl border border-dashed border-gray-200 bg-white p-8 text-center"><Car size={28} className="mx-auto text-gray-300"/><h2 className="mt-4 font-semibold">Votre suivi se prépare</h2><p className="mt-2 text-sm leading-6 text-gray-500">Les véhicules retenus et leurs contrôles apparaîtront ici dès leur préparation par votre conseiller.</p></section>}
+    {vehicles.map(vehicle => {
+      const checks = vehicle.checklist || [];
+      const validated = checks.filter(item => item.status === 'validated').length;
+      const applicable = checks.filter(item => item.status !== 'not_applicable').length;
+      const issue = checks.some(item => ['issue', 'rejected'].includes(item.status));
+      const finished = checks.length > 0 && checks.every(item => ['validated', 'not_applicable'].includes(item.status));
+      const label = !checks.length ? 'À préparer' : issue ? 'Point à vérifier' : finished ? 'Contrôles renseignés' : 'En cours';
+      return <article key={vehicle.id} data-checklist-vehicle={vehicle.id} className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+        <header className="border-b border-gray-100 p-5 sm:p-6"><div className="flex flex-wrap items-start justify-between gap-3"><h2 className="min-w-0 break-words text-base font-semibold">{vehicle.title || 'Annonce véhicule'}</h2><span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${issue?'bg-amber-50 text-amber-700':finished?'bg-emerald-50 text-emerald-700':'bg-gray-100 text-gray-500'}`}>{finished?<Check size={13}/>:<Clock3 size={13}/>} {label}</span></div>
+          {vehicle.link && <a href={vehicle.link} target="_blank" rel="noopener noreferrer" className="mt-3 flex items-start gap-2 text-sm leading-6 text-blue-600 hover:underline"><ExternalLink size={16} className="mt-1 shrink-0"/><span className="break-all">{vehicle.link}</span></a>}
+          {checks.length > 0 && <div className="mt-5"><p className="text-xs text-gray-500">{applicable ? `${validated}/${applicable} points validés` : 'Aucun point applicable'}</p><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-gray-100"><div className="h-full rounded-full bg-emerald-500 transition-[width] duration-500 motion-reduce:transition-none" style={{width:`${applicable?validated/applicable*100:0}%`}}/></div></div>}
+        </header>
+        {checks.length ? <ul className="divide-y divide-gray-100">{checks.map(item => {
+          const status = statuses[item.status as keyof typeof statuses] || statuses.pending;
+          const Icon = status.icon;
+          return <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-6"><span className="min-w-0 flex-1 break-words text-sm text-gray-700">{item.name}</span><span className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium ${status.color}`}><Icon size={14}/>{status.label}</span></li>;
+        })}</ul> : <p className="px-5 py-6 text-sm leading-6 text-gray-500 sm:px-6">Votre conseiller prépare la checklist de ce véhicule. Les points de contrôle apparaîtront ici dès leur enregistrement.</p>}
+      </article>;
+    })}
+  </div></main>;
 }

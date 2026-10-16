@@ -25,6 +25,8 @@ interface TimelineEvent {
 interface ClientData {
   id: string;
   name: string;
+  first_name?: string | null;
+  last_name?: string | null;
   email: string;
   phone: string;
   marque: string;
@@ -74,7 +76,6 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
 
     const fetchPreselectedVehicles = async () => {
       try {
-        setLoading(true);
         const response = await fetch(
           `http://localhost:3000/api/vehicles/client/${clientData.id}`,
           {
@@ -96,7 +97,13 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
     };
 
     fetchPreselectedVehicles();
-    return () => { isMounted = false };
+    const timer = setInterval(fetchPreselectedVehicles, 5000);
+    window.addEventListener('vehicles-updated', fetchPreselectedVehicles);
+    return () => {
+      isMounted = false;
+      clearInterval(timer);
+      window.removeEventListener('vehicles-updated', fetchPreselectedVehicles);
+    };
   }, [clientData.id]);
 
   // ==========================================
@@ -115,6 +122,7 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
       if (!response.ok) throw new Error("Erreur suppression");
 
       setSelectedVehicles(prev => prev.filter(v => v.id !== vehicleId));
+      window.dispatchEvent(new Event("vehicles-updated"));
       toast.success("Véhicule supprimé 🚗");
     } catch {
       toast.error("Erreur lors de la suppression ❌");
@@ -127,9 +135,6 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
 
   // Aperçu client : au moins un véhicule sélectionné + envoyé au client
   const noVehicle = selectedVehicles.length === 0;
-
-  // Étape 1 → impossible si aucun véhicule pré-sélectionné
-  const lockStep1 = clientData.step === 1 && noVehicle;
 
   // Étape 2 → impossible si aucun véhicule sélectionné par le client
   const clientHasSelected = selectedVehicles.some(v => v.selected_by === "client");
@@ -219,12 +224,6 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
   // ==========================================
   const handleValidateStep = async () => {
     const nextStep = clientData.step + 1;
-
-    // Blocage étape 1
-    if (lockStep1) {
-      toast.error("Vous devez présélectionner au moins un véhicule.");
-      return;
-    }
 
     // Blocage étape 2
     if (lockStep2) {
@@ -353,7 +352,7 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
             ) : (
               <Paperclip className="w-4 h-4 mr-2" />
             )}
-            Générer et envoyer le lien
+            Copier le lien client
           </button>
 
           {generatedLink && (
@@ -402,8 +401,8 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
             {/* VALIDATE */}
             <button
               onClick={handleValidateStep}
-              disabled={updating || lockStep1 || lockStep2}
-              className={`w-full flex items-center justify-center py-2 px-4 rounded-md text-white transition ${updating || lockStep1 || lockStep2
+              disabled={updating || lockStep2 || clientData.step >= 6}
+              className={`w-full flex items-center justify-center py-2 px-4 rounded-md text-white transition ${updating || lockStep2 || clientData.step >= 6
                 ? "bg-blue-300 cursor-not-allowed"
                 : "bg-blue-600 hover:bg-blue-700"
                 }`}
@@ -416,8 +415,8 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
 
               {updating
                 ? "Validation..."
-                : lockStep1
-                  ? "Présélection requise"
+                : clientData.step >= 6
+                  ? "Dernière étape"
                   : lockStep2
                     ? "Choix client requis"
                     : `Valider étape ${clientData.step}`}
@@ -451,21 +450,16 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
               >
                 <button
                   onClick={() => handleRemoveVehicle(v.id)}
+                  aria-label={`Supprimer la proposition ${v.title}`}
                   className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition"
                 >
                   <XIcon className="w-3 h-3" />
                 </button>
 
-                <img
-                  src={v.image}
-                  alt={v.title}
-                  className="w-16 h-12 object-cover rounded-md"
-                />
-
-                <div className="flex-1">
-                  <p className="text-sm font-medium truncate">{v.title}</p>
-                  <p className="text-xs text-gray-500">
-                    {v.price} • {v.mileage}
+                <div className="flex-1 min-w-0 pr-5">
+                  <a href={v.link} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-blue-600 break-all">{v.title}</a>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {v.selected_by === 'client' ? 'Retenu par le client' : v.selected_by === 'rejected' ? 'Refusé par le client' : 'En attente du client'}
                   </p>
                 </div>
               </div>
@@ -517,6 +511,8 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
         onSubmit={handleUpdateClient}
         clientData={{
           name: clientData.name,
+          first_name: clientData.first_name || "",
+          last_name: clientData.last_name || "",
           email: clientData.email,
           phone: clientData.phone,
           marque: clientData.marque,

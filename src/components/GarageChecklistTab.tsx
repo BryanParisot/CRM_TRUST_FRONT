@@ -11,10 +11,7 @@ interface ChecklistItem {
 interface VehicleChecklist {
   id: string;
   name: string;
-  price: string;
-  mileage: number;
-  year: number;
-  image: string;
+  link: string | null;
   checklistItems: ChecklistItem[];
 }
 
@@ -41,10 +38,7 @@ const GarageChecklistTab: React.FC<GarageChecklistTabProps> = ({
           key={vehicle.id}
           id={vehicle.id}
           name={vehicle.name}
-          image={vehicle.image}
-          mileage={vehicle.mileage}
-          year={vehicle.year}
-          price={vehicle.price}
+          link={vehicle.link}
           checklistItems={vehicle.checklistItems}
           onClick={() => handleOpenVehicleChecklist(vehicle.id)}
         />

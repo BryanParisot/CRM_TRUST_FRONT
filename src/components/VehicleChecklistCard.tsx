@@ -1,23 +1,16 @@
 import React from 'react';
-import { CheckCircleIcon, AlertCircleIcon, XCircleIcon, ArrowRightIcon } from 'lucide-react';
+import { CheckCircleIcon, AlertCircleIcon, XCircleIcon, ArrowRightIcon, Car, ExternalLink } from 'lucide-react';
 import { ChecklistItem } from './VehicleChecklist';
 export interface VehicleChecklistCardProps {
   id: string;
   name: string;
-  image: string;
-  mileage: number;
-  year: number;
-  price: string;
+  link: string | null;
   checklistItems: ChecklistItem[];
   onClick: () => void;
 }
 const VehicleChecklistCard: React.FC<VehicleChecklistCardProps> = ({
-  id,
   name,
-  image,
-  mileage,
-  year,
-  price,
+  link,
   checklistItems,
   onClick
 }) => {
@@ -27,32 +20,20 @@ const VehicleChecklistCard: React.FC<VehicleChecklistCardProps> = ({
   const issues = checklistItems.filter(item => item.status === 'issue').length;
   const rejected = checklistItems.filter(item => item.status === 'rejected').length;
   const total = checklistItems.length;
-  // Format mileage with thousand separators
-  const formatMileage = (mileage: number) => {
-    return mileage.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-  };
   // Determine the status color for the card border
   const getBorderColor = () => {
     if (rejected > 0) return 'border-red-500 dark:border-red-600';
     if (issues > 0) return 'border-orange-300 dark:border-orange-700';
     if (pending > 0) return 'border-yellow-300 dark:border-yellow-700';
-    if (validated === total) return 'border-green-300 dark:border-green-700';
+    if (total > 0 && validated === total) return 'border-green-300 dark:border-green-700';
     return 'border-gray-200 dark:border-gray-700';
   };
-  return <div onClick={onClick} className={`border-2 ${getBorderColor()} rounded-lg overflow-hidden cursor-pointer transition-all hover:shadow-md`}>
-    <div className="relative">
-      <img src={image} alt={name} className="w-full h-40 object-cover" />
-      <div className="absolute top-2 right-2 px-2 py-1 bg-gray-800 bg-opacity-75 rounded-md text-white text-xs">
-        {year}
-      </div>
-    </div>
+  return <article className={`min-w-0 border-2 ${getBorderColor()} rounded-xl overflow-hidden transition-shadow hover:shadow-md`}>
     <div className="p-4">
-      <h3 className="font-medium text-lg mb-2">{name}</h3>
-      <div className="flex justify-between items-center mb-3 text-sm text-gray-600 dark:text-gray-400">
-        <div>{formatMileage(mileage)} km</div>
-        <div>{price}</div>
-      </div>
-      <div className="flex items-center justify-between">
+      <span className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300"><Car size={21}/></span>
+      <h3 className="break-words font-semibold text-base">{name}</h3>
+      {link&&<a href={link} target="_blank" rel="noopener noreferrer" className="mt-2 flex items-start gap-1.5 text-xs leading-5 text-blue-600 hover:underline dark:text-blue-400"><ExternalLink size={14} className="mt-0.5 shrink-0"/><span className="break-all">{link}</span></a>}
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 pt-4 dark:border-gray-700">
         <div className="text-sm font-medium">
           Points de contrôle:{' '}
           <span className="font-bold">
@@ -78,12 +59,13 @@ const VehicleChecklistCard: React.FC<VehicleChecklistCardProps> = ({
           </div>}
         </div>
       </div>
+      {total===0&&<p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Checklist à préparer</p>}
       <div className="mt-4 flex justify-end">
-        <button className="flex items-center text-sm text-blue-600 dark:text-blue-400" onClick={onClick}>
-          Voir détails <ArrowRightIcon className="w-4 h-4 ml-1" />
+        <button aria-label={`Ouvrir la checklist de ${name}`} className="flex items-center rounded-lg px-2 py-1 text-sm text-blue-600 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 dark:text-blue-400 dark:hover:bg-blue-900/30" onClick={onClick}>
+          Voir la checklist <ArrowRightIcon className="w-4 h-4 ml-1" />
         </button>
       </div>
     </div>
-  </div>;
+  </article>;
 };
 export default VehicleChecklistCard;

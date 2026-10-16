@@ -1,9 +1,11 @@
 import { X } from "lucide-react";
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import vehicleData from '../data/vehicles.json';
 
 interface EditClientFormData {
     name: string;
+    first_name: string;
+    last_name: string;
     email: string;
     phone: string;
     marque: string;
@@ -35,10 +37,12 @@ const EditClientModal: React.FC<EditClientModalProps> = ({
 }) => {
     const [formData, setFormData] = useState<EditClientFormData>(clientData);
 
-    // Update form when clientData changes
+    const wasOpen = useRef(false);
+    // Initialiser à l’ouverture ; les rafraîchissements du dossier ne doivent pas effacer la saisie.
     useEffect(() => {
-        setFormData(clientData);
-    }, [clientData]);
+        if (isOpen && !wasOpen.current) setFormData(clientData);
+        wasOpen.current = isOpen;
+    }, [isOpen, clientData]);
 
     // Get available models based on selected marque
     const availableModels = useMemo(() => {
@@ -61,7 +65,7 @@ const EditClientModal: React.FC<EditClientModalProps> = ({
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSubmit(formData);
+        onSubmit({...formData, name: `${formData.first_name.trim()} ${formData.last_name.trim()}`});
     };
 
     if (!isOpen) return null;
@@ -97,21 +101,15 @@ const EditClientModal: React.FC<EditClientModalProps> = ({
                                 Informations de base
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label htmlFor="name" className="block text-sm font-medium mb-1">
-                                        Nom Complet <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        id="name"
-                                        name="name"
-                                        value={formData.name}
-                                        onChange={handleChange}
-                                        required
-                                        disabled={isUpdating}
-                                        className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50"
-                                    />
-                                </div>
+                                {(!clientData.first_name || !clientData.last_name) && <p className="md:col-span-2 text-sm text-gray-500">Nom précédemment enregistré : {clientData.name}. Complétez le prénom et le nom dans les champs ci-dessous.</p>}
+                                {([{key:'first_name',label:'Prénom',max:100},{key:'last_name',label:'Nom',max:150}] as const).map(field=>(
+                                  <div key={field.key}>
+                                    <label htmlFor={`edit-${field.key}`} className="block text-sm font-medium mb-1">{field.label} <span className="text-red-500">*</span></label>
+                                    <input type="text" id={`edit-${field.key}`} name={field.key} value={formData[field.key] ?? ''} onChange={handleChange}
+                                      required maxLength={field.max} disabled={isUpdating} autoComplete={field.key==='first_name'?'given-name':'family-name'}
+                                      className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50"/>
+                                  </div>
+                                ))}
 
                                 <div>
                                     <label htmlFor="email" className="block text-sm font-medium mb-1">

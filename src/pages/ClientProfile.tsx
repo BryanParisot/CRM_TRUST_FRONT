@@ -24,6 +24,8 @@ import EditClientModal from "../components/EditClientModal";
 interface ClientData {
     id: string;
     name: string;
+  first_name?: string | null;
+  last_name?: string | null;
     email: string;
     phone: string;
     marque: string;
@@ -358,6 +360,8 @@ const ClientProfile: React.FC = () => {
                 onSubmit={handleUpdateClient}
                 clientData={{
                     name: clientData.name,
+          first_name: clientData.first_name || "",
+          last_name: clientData.last_name || "",
                     email: clientData.email,
                     phone: clientData.phone,
                     marque: clientData.marque,

@@ -21,7 +21,8 @@ import vehicleData from '../data/vehicles.json';
 
 export interface NewClientFormData {
   // Step 1: Client Info
-  name: string;
+  first_name: string;
+  last_name: string;
   email: string;
   phone: string;
   date_of_birth: string;
@@ -40,7 +41,8 @@ export interface NewClientFormData {
 }
 
 export interface ClientSubmissionData {
-  name: string;
+  first_name: string;
+  last_name: string;
   email: string;
   phone: string;
   date_of_birth: string;
@@ -70,7 +72,8 @@ const NewClientModal: React.FC<NewClientModalProps> = ({
   const [step, setStep] = useState(1);
   const [direction, setDirection] = useState(0);
   const [formData, setFormData] = useState<NewClientFormData>({
-    name: '',
+    first_name: '',
+    last_name: '',
     email: '',
     phone: '',
     date_of_birth: '',
@@ -108,7 +111,7 @@ const NewClientModal: React.FC<NewClientModalProps> = ({
   const handleNext = () => {
     if (step === 1) {
       // Basic validation for step 1
-      if (formData.name && formData.email && formData.phone) {
+      if (formData.first_name.trim() && formData.last_name.trim() && formData.email && formData.phone) {
         setDirection(1);
         setStep(2);
       }
@@ -123,6 +126,8 @@ const NewClientModal: React.FC<NewClientModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!formData.first_name.trim() || !formData.last_name.trim()) { setStep(1); return; }
+
     // Convert numeric fields
     const submissionData: ClientSubmissionData = {
       ...formData,
@@ -136,7 +141,7 @@ const NewClientModal: React.FC<NewClientModalProps> = ({
 
     // Reset form after submit
     setFormData({
-      name: '', email: '', phone: '', date_of_birth: '',
+      first_name: '', last_name: '', email: '', phone: '', date_of_birth: '',
       marque: '', modele: '', budget: '', max_km: '',
       first_registration: '', carburant: '', boite: '', vehicle_color: '',
       puissance_min: '', description: ''
@@ -234,23 +239,17 @@ const NewClientModal: React.FC<NewClientModalProps> = ({
                         className="space-y-5"
                       >
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                          <div>
-                            <label className={labelClasses}>Nom Complet</label>
-                            <div className="relative">
-                              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                              <input
-                                type="text"
-                                name="name"
-                                value={formData.name}
-                                onChange={handleChange}
-                                onFocus={() => setFocusedField('name')}
-                                onBlur={() => setFocusedField(null)}
-                                required
-                                className={inputClasses('name')}
-                                placeholder="Jean Dupont"
-                              />
+                          {([{key:'first_name',label:'Prénom',placeholder:'Jean',max:100},{key:'last_name',label:'Nom',placeholder:'Dupont',max:150}] as const).map(field=>(
+                            <div key={field.key}>
+                              <label htmlFor={`new-${field.key}`} className={labelClasses}>{field.label}</label>
+                              <div className="relative">
+                                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                <input type="text" id={`new-${field.key}`} name={field.key} value={formData[field.key]} onChange={handleChange}
+                                  onFocus={()=>setFocusedField(field.key)} onBlur={()=>setFocusedField(null)} required maxLength={field.max}
+                                  autoComplete={field.key==='first_name'?'given-name':'family-name'} className={inputClasses(field.key)} placeholder={field.placeholder}/>
+                              </div>
                             </div>
-                          </div>
+                          ))}
                           <div>
                             <label className={labelClasses}>Email</label>
                             <div className="relative">

@@ -26,34 +26,18 @@ interface ClientHeaderProps {
   clientData: ClientData;
 }
 
-const ClientHeader: React.FC<ClientHeaderProps> = ({ clientData }) => (
-  <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-    <div className="flex flex-col md:flex-row md:items-center">
-      <div className="flex items-center mb-4 md:mb-0">
-        <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 text-2xl font-semibold mr-4">
-          {clientData.name.split(' ').map(n => n[0]).join('')}
-        </div>
-        <div>
-          <h1 className="text-xl font-bold">{clientData.name}</h1>
-          <div className="text-sm text-gray-600 dark:text-gray-400">
-            {clientData.email} • {clientData.phone}
-          </div>
-        </div>
+const ClientHeader: React.FC<ClientHeaderProps> = ({ clientData }) => {
+  const steps=['Informations client','Propositions de véhicules','Signature & acompte','Contrôles du véhicule','Solde & documents','Livraison'];
+  const words=clientData.name.trim().split(/\s+/);
+  const initials=[words[0]?.[0],words.length>1?words[words.length-1]?.[0]:''].join('').toUpperCase();
+  return <header className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800 sm:p-6">
+    <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+      <div className="flex min-w-0 items-center gap-4">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-lg font-semibold text-blue-600 dark:bg-blue-900/30 dark:text-blue-300">{initials}</span>
+        <div className="min-w-0"><h1 className="text-xl font-semibold tracking-tight">{clientData.name}</h1><p className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-gray-400"><span className="break-all">{clientData.email}</span><span>{clientData.phone}</span></p></div>
       </div>
-      <div className="md:ml-auto flex flex-col">
-        <div className="text-sm font-medium mb-1">Progression Globale</div>
-        <div className="w-full md:w-64 h-4 bg-gray-200 dark:bg-gray-700 rounded-full">
-          <div
-            className="h-4 bg-blue-600 dark:bg-blue-500 rounded-full"
-            style={{ width: `${clientData.progress}%` }}
-          ></div>
-        </div>
-        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-          Étape {clientData.step} sur 6 ({clientData.progress}% complété)
-        </div>
-      </div>
+      <div className="w-full xl:w-56 xl:shrink-0"><p className="flex justify-between gap-2 text-xs"><span className="font-medium text-gray-600 dark:text-gray-300">{steps[clientData.step-1]||'Suivi du dossier'}</span><span className="shrink-0 tabular-nums text-gray-400">{clientData.step}/6</span></p><div className="mt-2.5 grid grid-cols-6 gap-1.5" aria-label={`Étape ${clientData.step} sur 6`}>{steps.map((step,index)=><span key={step} className={`h-1.5 rounded-full ${index<clientData.step-1?'bg-emerald-400':index===clientData.step-1?'bg-blue-500':'bg-gray-100 dark:bg-gray-700'}`}/>)}</div></div>
     </div>
-  </div>
-);
-
+  </header>;
+};
 export default ClientHeader;

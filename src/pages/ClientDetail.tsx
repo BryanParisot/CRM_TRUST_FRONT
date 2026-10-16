@@ -12,6 +12,7 @@ import GarageChecklistTab from "../components/GarageChecklistTab";
 import Sidebar from "../components/Sidebar";
 import TabsNavigation from "../components/TabsNavigation";
 import VehicleChecklistModal from "../components/VehicleChecklistModal";
+import { DEFAULT_CHECKLIST_ITEMS } from '../utils/vehicleChecklist';
 
 // --- Interfaces ---
 interface TimelineEvent {
@@ -22,8 +23,11 @@ interface TimelineEvent {
 }
 
 interface ClientData {
+  deposit_amount: string;
   id: string;
   name: string;
+  first_name?: string | null;
+  last_name?: string | null;
   email: string;
   phone: string;
   marque: string;
@@ -64,24 +68,9 @@ interface ChecklistItem {
 interface VehicleChecklist {
   id: string;
   name: string;
-  price: string;
-  mileage: number;
-  year: number;
-  image: string;
+  link: string | null;
   checklistItems: ChecklistItem[];
 }
-
-const DEFAULT_CHECKLIST_ITEMS = [
-  { name: "Kilométrage certifié", status: "validated" },
-  { name: "Vidange à jour", status: "validated" },
-  { name: "Distribution vérifiée", status: "pending" },
-  { name: "CarVertical ajouté", status: "validated" },
-  { name: "Contrôle technique à jour", status: "validated" },
-  { name: "Freins vérifiés", status: "rejected" },
-  { name: "Pneus vérifiés", status: "validated" },
-  { name: "Climatisation fonctionnelle", status: "validated" },
-  { name: "Batterie testée", status: "pending" }
-] as const;
 
 // --- Composant principal ---
 const ClientDetail: React.FC = () => {
@@ -97,7 +86,6 @@ const ClientDetail: React.FC = () => {
   const [vehiclesChecklist, setVehiclesChecklist] =
     useState<VehicleChecklist[]>([]);
 
-  const [finalPaymentDone, setFinalPaymentDone] = useState<boolean>(false);
   const [selectedChecklistVehicle, setSelectedChecklistVehicle] =
     useState<string | null>(null);
 
@@ -106,10 +94,7 @@ const ClientDetail: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  const [vehicleOptions, setVehicleOptions] = useState<Vehicle[]>([]);
-  const [vehiclePreSelect, setvehiclePreSelect] = useState<Vehicle[]>([]);
-  console.log(vehiclePreSelect)
-  console.log(id);
+
   // ========== Sync activeTab avec step stocké en BDD ==========
   useEffect(() => {
     if (clientData) {
@@ -146,62 +131,6 @@ const ClientDetail: React.FC = () => {
 
   useEffect(() => {
     if (!clientData) return;
-    const fetchPreselectedVehicles = async () => {
-      try {
-        const res = await fetch(
-          `http://localhost:3000/api/vehicles/client/${id}`,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          }
-        );
-
-        const data = await res.json();
-        setvehiclePreSelect(data);
-        console.log(vehiclePreSelect)
-      } catch (error) {
-        console.error("Erreur fetch preselected:", error);
-      }
-    };
-
-    fetchPreselectedVehicles();
-  }, [clientData]);
-
-  // ========== Fetch véhicules dynamiques ==========
-  useEffect(() => {
-    if (!clientData) return;
-
-    const fetchVehicles = async () => {
-      try {
-        const res = await fetch("http://localhost:3000/api/scrape", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            marque: clientData.marque,
-            modele: clientData.modele,
-            budget: clientData.budget,
-            maxKm: clientData.max_km,
-            couleur: clientData.couleur,
-            fuel: clientData.carburant,
-            puissance_min: clientData.puissance_min,
-            boite: clientData.boite,
-          }),
-        });
-
-        const data = await res.json();
-        setVehicleOptions(data);
-      } catch (error) {
-        console.error("Erreur fetch véhicules:", error);
-      }
-    };
-
-    fetchVehicles();
-  }, [clientData]);
-
-
-  useEffect(() => {
-    if (!clientData) return;
 
     const fetchPreselectedVehicles = async () => {
       try {
@@ -221,11 +150,8 @@ const ClientDetail: React.FC = () => {
           .filter((v: any) => v.selected_by === 'client')
           .map((v: any) => ({
             id: v.id.toString(),
-            name: v.title || v.name, // Handle title or name
-            price: v.price,
-            mileage: typeof v.mileage === 'string' ? parseInt(v.mileage.replace(/\D/g, '')) : v.mileage, // Ensure number
-            year: v.year ? (typeof v.year === 'string' && v.year.includes('/') ? parseInt(v.year.split('/')[1]) : parseInt(v.year)) : 2020, // Parse year if needed
-            image: v.image,
+            name: v.title || v.name || 'Annonce véhicule',
+            link: v.link || null,
             checklistItems: (v.checklist || []).map((item: any) => ({
               id: item.id.toString(),
               name: item.name,
@@ -271,10 +197,10 @@ const ClientDetail: React.FC = () => {
         vehicle.id === vehicleId
           ? {
             ...vehicle,
-            checklistItems: DEFAULT_CHECKLIST_ITEMS.map((item, index) => ({
+            checklistItems: DEFAULT_CHECKLIST_ITEMS.map((name, index) => ({
               id: `new-${vehicleId}-${index}`,
-              name: item.name,
-              status: item.status === 'rejected' ? 'issue' : item.status as "validated" | "pending" | "issue",
+              name,
+              status: 'pending' as const,
               comment: ""
             })),
           }
@@ -302,12 +228,6 @@ const ClientDetail: React.FC = () => {
     );
   };
 
-  // ========== Utilitaire format ==========  
-  const formatMileage = (mileage: number | string | undefined | null): string => {
-    if (mileage === undefined || mileage === null) return "N/A";
-    return mileage.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-  };
-
   const selectedVehicle = selectedChecklistVehicle
     ? vehiclesChecklist.find((v) => v.id === selectedChecklistVehicle)
     : null;
@@ -330,24 +250,26 @@ const ClientDetail: React.FC = () => {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
             <TabsNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
 
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               {activeTab === 1 && (
                 <ClientInfoTab
                   clientData={clientData}
-                  vehicleOptions={vehicleOptions}
-                  formatMileage={(n) => n ? n.toString() : "N/A"}
                 />
               )}
 
               {activeTab === 2 && (
                 <ClientSelectionTab
-                  vehicleOptions={vehiclePreSelect}
-                  formatMileage={formatMileage}
+                  clientId={clientData.id}
+                  canAdd={clientData.step === 2}
                 />
               )}
 
               {activeTab === 3 && (
                 <DepositAndIdTab
+                  clientId={clientData.id}
+                  depositAmount={clientData.deposit_amount}
+                  canEditAmount={clientData.step === 3}
+                  onAmountChanged={(amount) => setClientData(prev => prev ? { ...prev, deposit_amount: amount } : prev)}
                   depositPaid={depositPaid}
                   setDepositPaid={setDepositPaid}
                   idCardSent={idCardSent}
@@ -365,12 +287,11 @@ const ClientDetail: React.FC = () => {
 
               {activeTab === 5 && (
                 <DocumentsAndPaymentTab
-                  finalPaymentDone={finalPaymentDone}
-                  setFinalPaymentDone={setFinalPaymentDone}
+                  clientId={clientData.id}
                 />
               )}
 
-              {activeTab === 6 && <DeliveryTab />}
+              {activeTab === 6 && <DeliveryTab clientId={clientData.id} />}
             </div>
           </div>
         </div>
@@ -418,9 +339,7 @@ const ClientDetail: React.FC = () => {
             }
           }}
           vehicleName={selectedVehicle.name}
-          vehicleImage={selectedVehicle.image}
-          vehicleYear={selectedVehicle.year}
-          vehicleMileage={selectedVehicle.mileage}
+          vehicleLink={selectedVehicle.link}
           checklistItems={selectedVehicle.checklistItems}
           onUpdateStatus={(itemId, status) =>
             handleChecklistStatusUpdate(selectedVehicle.id, itemId, status)

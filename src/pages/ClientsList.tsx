@@ -20,6 +20,8 @@ import NewClientModal, { ClientSubmissionData } from "../components/NewClientMod
 interface Client {
     id: number;
     name: string;
+  first_name?: string | null;
+  last_name?: string | null;
     email: string;
     phone: string;
     marque?: string;
@@ -368,6 +370,8 @@ const ClientsList: React.FC = () => {
                         onSubmit={handleUpdateClient}
                         clientData={{
                             name: selectedClient.name,
+          first_name: selectedClient.first_name || "",
+          last_name: selectedClient.last_name || "",
                             email: selectedClient.email,
                             phone: selectedClient.phone,
                             marque: selectedClient.marque || "",
