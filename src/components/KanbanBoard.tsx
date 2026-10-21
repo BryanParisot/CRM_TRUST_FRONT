@@ -7,7 +7,9 @@ import KanbanColumn from './KanbanColumn';
 import KanbanCard, {KanbanCardPreview} from './KanbanCard';
 import NewClientModal, {type ClientSubmissionData} from './NewClientModal';
 import {PIPELINE_STAGES as columns} from '../utils/pipeline';
+import {vehicleSearchLabels, type AdditionalVehicle} from '../utils/vehiclePreferences';
 export interface Client {
+  additional_vehicles?: AdditionalVehicle[];
   id:number;name:string;marque?:string;modele?:string;vehicle?:string;step:number;progress:number;
   hasNotification:boolean;mileage?:number;year?:number;premiere_immat?:string;price?:string;selectedVehicles?:string[];budget?:number|string;
 }
@@ -52,7 +54,7 @@ export default function KanbanBoard(){
     }catch(error){toast.error((error as Error).message);}
   };
   const normalized=query.trim().toLocaleLowerCase('fr');
-  const visible=clients.filter(c=>`${c.name} ${c.marque||''} ${c.modele||''}`.toLocaleLowerCase('fr').includes(normalized));
+  const visible=clients.filter(c=>`${c.name} ${vehicleSearchLabels(c).join(' ')}`.toLocaleLowerCase('fr').includes(normalized));
   return <section className="flex h-full min-h-0 min-w-0 flex-col gap-5">
     <header className="flex flex-wrap items-center justify-between gap-4"><div><div className="flex items-center gap-3"><h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">Pipeline clients</h1><span className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs font-medium tabular-nums text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">{clients.length} dossier{clients.length>1?'s':''}</span></div><p className="mt-1.5 text-sm text-gray-500 dark:text-gray-400">Du premier échange à la remise des clés.</p></div><button onClick={()=>setIsModalOpen(true)} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"><Plus size={17}/>Nouveau client</button></header>
     <div className="flex flex-wrap items-center justify-between gap-3"><div className="relative min-w-0 flex-1 sm:w-80 sm:flex-none"><Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input type="search" aria-label="Rechercher un dossier" placeholder="Rechercher un client ou un véhicule…" value={query} onChange={e=>setQuery(e.target.value)} className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-8 text-sm text-gray-700 outline-none transition placeholder:text-gray-400 focus:border-blue-300 focus:ring-4 focus:ring-blue-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:focus:ring-blue-900/20"/>{query&&<button aria-label="Effacer la recherche" onClick={()=>setQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-gray-400 hover:text-gray-700"><X size={14}/></button>}</div><div className="flex shrink-0 items-center gap-4"><p className="hidden items-center gap-1.5 text-xs text-gray-400 xl:flex"><GripVertical size={14}/>Glissez un dossier pour changer d’étape</p><button aria-label="Actualiser le pipeline" title="Actualiser le pipeline" disabled={loading||moving} onClick={fetchClients} className="rounded-lg border border-gray-200 bg-white p-2.5 text-gray-500 transition hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"><RefreshCw size={16} className={loading?'animate-spin':''}/></button></div></div>

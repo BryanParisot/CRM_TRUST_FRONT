@@ -1,19 +1,10 @@
-import {
-  ArchiveIcon,
-  BellIcon,
-  CarIcon,
-  CheckCircle2Icon,
-  ClockIcon,
-  Paperclip,
-  PencilIcon,
-  XIcon,
-} from "lucide-react";
+import {ArrowLeft, ArrowRight, ArrowUpRight, Car, CheckCircle2, ChevronDown, Clock3, Copy, Pencil, Trash2} from 'lucide-react';
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ClipLoader } from "react-spinners";
 import DeleteClientModal from "./DeleteClientModal";
-import EditClientModal from "./EditClientModal";
+import {PIPELINE_STAGES} from '../utils/pipeline';
 
 interface TimelineEvent {
   id: string;
@@ -25,27 +16,14 @@ interface TimelineEvent {
 interface ClientData {
   id: string;
   name: string;
-  first_name?: string | null;
-  last_name?: string | null;
-  email: string;
-  phone: string;
-  marque: string;
-  modele: string;
-  max_km: string;
-  couleur: string;
-  carburant: string;
-  boite: string;
-  puissance_min: number;
   step: number;
-  progress: number;
-  budget: string;
-  description: string;
   timeline: TimelineEvent[];
 }
 
 interface Vehicle {
   id: number;
   title: string;
+  link: string;
   price: string;
   mileage: string;
   image: string;
@@ -56,9 +34,10 @@ interface Vehicle {
 
 interface SidebarProps {
   clientData: ClientData;
+  onEdit: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
+const Sidebar: React.FC<SidebarProps> = ({ clientData, onEdit }) => {
   const navigate = useNavigate();
   const [selectedVehicles, setSelectedVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -67,8 +46,6 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
-  const [showEditModal, setShowEditModal] = useState<boolean>(false);
-  const [isUpdating, setIsUpdating] = useState<boolean>(false);
 
   // ==========================================
   // 🔵 LOAD PRE-SELECTED VEHICLES
@@ -294,248 +271,67 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
     }
   };
 
-  // ==========================================
-  // ✏️ UPDATE CLIENT
-  // ==========================================
-  const handleUpdateClient = async (formData: any) => {
-    try {
-      setIsUpdating(true);
+  const stage = PIPELINE_STAGES.find(stage => stage.step === clientData.step);
+  const previousStage = PIPELINE_STAGES.find(stage => stage.step === clientData.step - 1);
+  const nextStage = PIPELINE_STAGES.find(stage => stage.step === clientData.step + 1);
+  const blocked = lockStep2 || lockStep4;
+  const nextLabel = [
+    'Valider et passer aux propositions',
+    'Passer à la signature',
+    'Passer aux contrôles',
+    'Passer au solde',
+    'Passer à la livraison',
+  ][clientData.step - 1];
+  const finalChoice = selectedVehicles.find(vehicle => vehicle.is_final_choice);
+  const iconButton = 'inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 disabled:opacity-40 dark:hover:bg-gray-700 dark:hover:text-blue-300';
+  const secondary = 'inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-xs font-medium text-gray-600 transition hover:border-blue-200 hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:text-blue-300';
 
-      const res = await fetch(
-        `http://localhost:3000/api/clients/${clientData.id}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-          body: JSON.stringify(formData),
-        }
-      );
-
-      if (!res.ok) throw new Error("Erreur lors de la mise à jour");
-
-      toast.success("Client modifié avec succès ✅");
-      setShowEditModal(false);
-
-      // Reload page to show updated data
-      window.location.reload();
-    } catch (error: any) {
-      toast.error(error.message || "Erreur lors de la mise à jour ❌");
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  // ==========================================
-  // 🖼️ RENDER
-  // ==========================================
-  return (
-    <div className="space-y-6">
-
-      {/* ACTIONS */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-        <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">
-          Actions
-        </h3>
-
-        <div className="space-y-2">
-
-          {/* GENERATE LINK */}
-          <button
-            onClick={handleGenerateLink}
-            disabled={noVehicle || linkLoading}
-            className={`w-full flex items-center justify-center py-2 px-4 border rounded-md transition ${noVehicle || linkLoading
-              ? "text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed"
-              : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-              }`}
-          >
-            {linkLoading ? (
-              <ClipLoader size={16} color="#4B5563" className="mr-2" />
-            ) : (
-              <Paperclip className="w-4 h-4 mr-2" />
-            )}
-            Copier le lien client
+  return <aside aria-label="Actions et suivi du dossier" className="min-w-0 space-y-5">
+    <section aria-labelledby="dossier-actions-title" className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+      <div className="p-5">
+        <div className="flex items-center justify-between gap-3"><h2 id="dossier-actions-title" className="text-sm font-semibold text-gray-900 dark:text-gray-100">Suivi du dossier</h2><span className="text-xs tabular-nums text-gray-400">{clientData.step}/{PIPELINE_STAGES.length}</span></div>
+        <span className={`mt-4 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium ${stage?.badge || 'bg-gray-100 text-gray-500'}`}><span className={`h-1.5 w-1.5 rounded-full ${stage?.accent || 'bg-gray-400'}`}/>{stage?.title || 'Étape en cours'}</span>
+        {nextStage ? <>
+          <p className="mt-3 text-xs leading-5 text-gray-500 dark:text-gray-400">{clientData.step === 1 ? 'Confirmez les critères avant de proposer les annonces au client.' : `Étape suivante : ${nextStage.title}`}</p>
+          <button type="button" onClick={handleValidateStep} disabled={updating || blocked} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold leading-5 text-white shadow-sm transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-40 dark:focus-visible:ring-blue-900">
+            {updating ? <><ClipLoader size={16} color="#fff"/>Mise à jour…</> : <>{nextLabel}<ArrowRight size={16} className="shrink-0"/></>}
           </button>
-
-          {generatedLink && (
-            <p className="mt-1 text-[11px] text-gray-500 break-all">
-              Lien client : {generatedLink}
-            </p>
-          )}
-
-          {/* MODIFY */}
-          <button
-            onClick={() => setShowEditModal(true)}
-            className="w-full flex items-center justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-          >
-            <PencilIcon className="w-4 h-4 mr-2" />
-            Modifier Client
-          </button>
-
-          {/* ARCHIVE */}
-          <button
-            onClick={() => setShowDeleteModal(true)}
-            className="w-full flex items-center justify-center py-2 px-4 border border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 transition"
-          >
-            <ArchiveIcon className="w-4 h-4 mr-2" />
-            Archiver Client
-          </button>
-
-          {/* NOTIF */}
-          <button className="w-full flex items-center justify-center py-2 px-4 border rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition">
-            <BellIcon className="w-4 h-4 mr-2" />
-            Envoyer Notification
-          </button>
-
-          {/* VALIDATION BUTTONS */}
-          <div className="flex flex-row gap-2 justify-center h-full">
-
-            {clientData.step > 1 && (
-              <button
-                onClick={handleDowngradeStep}
-                disabled={updating || clientData.step === 1}
-                className="w-full flex items-center justify-center py-2 px-4 rounded-md bg-red-500 text-white hover:bg-red-600 transition disabled:bg-red-300"
-              >
-                Rétrograder étape
-              </button>
-            )}
-
-            {/* VALIDATE */}
-            <button
-              onClick={handleValidateStep}
-              disabled={updating || lockStep2 || lockStep4 || clientData.step >= 6}
-              className={`w-full flex items-center justify-center py-2 px-4 rounded-md text-white transition ${updating || lockStep2 || lockStep4 || clientData.step >= 6
-                ? "bg-blue-300 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-700"
-                }`}
-            >
-              {updating ? (
-                <ClipLoader size={16} color="#fff" />
-              ) : (
-                <CheckCircle2Icon className="w-4 h-4 mr-2" />
-              )}
-
-              {updating
-                ? "Validation..."
-                : clientData.step >= 6
-                  ? "Dernière étape"
-                  : lockStep2
-                    ? "Choix client requis"
-                    :lockStep4?'Choix définitif requis'
-                    : `Valider étape ${clientData.step}`}
-            </button>
-
-          </div>
+          {lockStep4 && <p role="status" className="mt-3 flex items-start gap-2 text-xs leading-5 text-gray-500 dark:text-gray-400"><Clock3 size={14} className="mt-0.5 shrink-0"/>Le client doit confirmer son choix définitif après les contrôles.</p>}
+        </> : <p className="mt-4 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400"><CheckCircle2 size={15}/>Dernière étape du parcours</p>}
+        {previousStage && <button type="button" onClick={handleDowngradeStep} disabled={updating} title={`Revenir à l’étape ${previousStage.step} : ${previousStage.title}`} className={`mt-2 ${secondary}`}><ArrowLeft size={14} className="shrink-0"/>Revenir à l’étape précédente</button>}
+      </div>
+      <div className="space-y-3 border-t border-gray-100 p-4 dark:border-gray-700">
+        {clientData.step > 1 && <div>
+          <button type="button" onClick={handleGenerateLink} disabled={loading || noVehicle || linkLoading} className={secondary}>{linkLoading ? <ClipLoader size={14} color="#64748b"/> : <Copy size={14}/>}Copier le lien client</button>
+          {generatedLink && <p className="mt-2 break-all text-[11px] leading-5 text-gray-400">{generatedLink}</p>}
+        </div>}
+        <div className="flex items-center justify-between gap-3">
+          <Link to={`/client/${clientData.id}/profile`} className="inline-flex items-center gap-1.5 rounded text-xs font-medium text-gray-500 hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 dark:text-gray-400 dark:hover:text-blue-300">Voir la fiche client<ArrowUpRight size={13}/></Link>
+          <div className="flex gap-1"><button type="button" onClick={onEdit} aria-label="Modifier le client" title="Modifier le client" className={iconButton}><Pencil size={15}/></button><button type="button" onClick={() => setShowDeleteModal(true)} aria-label="Supprimer le client" title="Supprimer le client" className={`${iconButton} hover:!bg-red-50 hover:!text-red-600 dark:hover:!bg-red-900/20`}><Trash2 size={15}/></button></div>
         </div>
       </div>
+    </section>
 
-      {/* VEHICLE LIST */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-        <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3 flex items-center">
-          <CarIcon className="w-4 h-4 mr-2 text-blue-500" />
-          Véhicules présélectionnés ({selectedVehicles.length})
-        </h3>
-
-        {loading ? (
-          <div className="flex justify-center py-6">
-            <ClipLoader size={28} color="#2563EB" />
-          </div>
-        ) : selectedVehicles.length === 0 ? (
-          <p className="text-xs text-center text-gray-400">
-            Aucun véhicule présélectionné.
-          </p>
-        ) : (
-          <div className="space-y-3">
-            {selectedVehicles.map((v) => (
-              <div
-                key={v.id}
-                data-proposal-not-chosen={selectedVehicles.some(vehicle=>vehicle.is_final_choice)&&!v.is_final_choice}
-                className={`group relative flex items-center space-x-3 border rounded-lg p-2 transition ${selectedVehicles.some(vehicle=>vehicle.is_final_choice)&&!v.is_final_choice?'border-gray-200 bg-gray-50 opacity-60 dark:border-gray-700 dark:bg-gray-900/50':'hover:shadow-md'}`}
-              >
-                <button
-                  onClick={() => handleRemoveVehicle(v.id)}
-                  aria-label={`Supprimer la proposition ${v.title}`}
-                  className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition"
-                >
-                  <XIcon className="w-3 h-3" />
-                </button>
-
-                <div className="flex-1 min-w-0 pr-5">
-                  <a href={v.link} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-blue-600 break-all">{v.title}</a>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {v.selected_by === 'client' ? 'Retenu par le client' : v.selected_by === 'rejected' ? 'Refusé par le client' : 'En attente du client'}
-                  </p>
-                  {v.is_final_choice&&<p className={`mt-2 text-xs font-semibold ${v.final_choice_needs_reconfirmation?'text-amber-700':'text-emerald-700 dark:text-emerald-400'}`}>{v.final_choice_needs_reconfirmation?'Choix à reconfirmer':'Choix définitif du client'}</p>}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+    {clientData.step > 1 && <details open className="group overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+      <summary className="flex cursor-pointer list-none items-center gap-2.5 px-4 py-4 text-sm font-semibold text-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-300 dark:text-gray-100 [&::-webkit-details-marker]:hidden"><Car size={16} className="shrink-0 text-gray-400"/><span className="min-w-0 flex-1">Véhicules proposés</span><span className="rounded-md bg-gray-100 px-1.5 py-0.5 text-xs font-medium tabular-nums text-gray-500 dark:bg-gray-700 dark:text-gray-300">{selectedVehicles.length}</span><ChevronDown size={15} className="shrink-0 text-gray-400 transition group-open:rotate-180"/></summary>
+      <div className="space-y-2 border-t border-gray-100 p-3 dark:border-gray-700">
+        {loading ? <div className="flex justify-center py-4"><ClipLoader size={22} color="#2563EB"/></div> : !selectedVehicles.length ? <p className="px-1 py-3 text-xs text-gray-400">Aucune annonce ajoutée pour le moment.</p> : selectedVehicles.map(vehicle => {
+          const notChosen = Boolean(finalChoice) && !vehicle.is_final_choice;
+          return <div key={vehicle.id} data-proposal-not-chosen={notChosen} className={`flex items-start gap-2 rounded-lg border p-3 ${notChosen ? 'border-gray-200 bg-gray-50 opacity-60 dark:border-gray-700 dark:bg-gray-900/50' : 'border-gray-100 dark:border-gray-700'}`}>
+            <div className="min-w-0 flex-1"><a href={vehicle.link} target="_blank" rel="noopener noreferrer" className="break-words text-xs font-medium leading-5 text-blue-600 hover:underline dark:text-blue-300">{vehicle.title}</a><p className="mt-1 text-[11px] leading-5 text-gray-400">{vehicle.selected_by === 'client' ? 'Retenu par le client' : vehicle.selected_by === 'rejected' ? 'Refusé par le client' : 'En attente du client'}</p>{vehicle.is_final_choice && <p className={`mt-2 text-[11px] font-semibold ${vehicle.final_choice_needs_reconfirmation ? 'text-amber-600 dark:text-amber-300' : 'text-emerald-600 dark:text-emerald-300'}`}>{vehicle.final_choice_needs_reconfirmation ? 'Choix à reconfirmer' : 'Choix définitif du client'}</p>}</div>
+            <button type="button" onClick={() => handleRemoveVehicle(vehicle.id)} disabled={vehicle.is_final_choice} aria-label={`Supprimer la proposition ${vehicle.title}`} title={vehicle.is_final_choice ? 'Véhicule choisi définitivement' : 'Supprimer cette proposition'} className={`${iconButton} shrink-0 hover:!text-red-600`}><Trash2 size={14}/></button>
+          </div>;
+        })}
       </div>
+    </details>}
 
-      {/* TIMELINE */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-        <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">
-          Historique
-        </h3>
-        <div className="relative pl-6 space-y-4">
-          {clientData.timeline.map((event, index) => (
-            <div key={event.id} className="relative">
-              <div className="absolute -left-6 mt-1.5">
-                <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                {index < clientData.timeline.length - 1 && (
-                  <div className="absolute top-3 left-1.5 w-0.5 bg-gray-300 h-full"></div>
-                )}
-              </div>
+    {clientData.timeline.length > 0 && <section className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+      <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Historique</h3>
+      <ol className="mt-4 space-y-4">{clientData.timeline.map(event => <li key={event.id} className="border-l-2 border-gray-100 pl-3 dark:border-gray-700"><p className="text-xs leading-5 text-gray-700 dark:text-gray-200">{event.title}</p><p className="mt-1 flex items-center gap-1.5 text-[11px] text-gray-400"><Clock3 size={12}/>{event.date} à {event.time}</p></li>)}</ol>
+    </section>}
 
-              <div>
-                <p className="text-sm">{event.title}</p>
-                <p className="text-xs text-gray-500 flex items-center">
-                  <ClockIcon className="w-3 h-3 mr-1" />
-                  {event.date} à {event.time}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* DELETE CONFIRMATION MODAL */}
-      <DeleteClientModal
-        isOpen={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
-        onConfirm={handleDeleteClient}
-        clientName={clientData.name}
-        isDeleting={isDeleting}
-      />
-
-      {/* EDIT CLIENT MODAL */}
-      <EditClientModal
-        isOpen={showEditModal}
-        onClose={() => setShowEditModal(false)}
-        onSubmit={handleUpdateClient}
-        clientData={{
-          name: clientData.name,
-          first_name: clientData.first_name || "",
-          last_name: clientData.last_name || "",
-          email: clientData.email,
-          phone: clientData.phone,
-          marque: clientData.marque,
-          modele: clientData.modele,
-          budget: clientData.budget,
-          max_km: clientData.max_km,
-          carburant: clientData.carburant,
-          boite: clientData.boite,
-          puissance_min: String(clientData.puissance_min),
-          couleur: clientData.couleur,
-          description: clientData.description,
-        }}
-        isUpdating={isUpdating}
-      />
-
-    </div>
-  );
+    <DeleteClientModal isOpen={showDeleteModal} onClose={() => {if (!isDeleting) setShowDeleteModal(false);}} onConfirm={handleDeleteClient} clientName={clientData.name} isDeleting={isDeleting}/>
+  </aside>;
 };
 
 export default Sidebar;

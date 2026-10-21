@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { ArrowRight, Check, Clock3, Download, ExternalLink, FileCheck2, FileText, Fingerprint, Loader2, RefreshCw, ShieldCheck, Upload, Wallet, AlertCircle, Eye } from 'lucide-react';
+import { ArrowRight, Check, Clock3, Download, ExternalLink, FileCheck2, FileText, Fingerprint, Loader2, Pencil, RefreshCw, ShieldCheck, Upload, Wallet, AlertCircle, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function ClientDocumentsAdmin({clientId, onPaymentChanged, depositContent}:{clientId:string;onPaymentChanged:(paid:boolean)=>void;depositContent:ReactNode}) {
@@ -8,6 +8,7 @@ export default function ClientDocumentsAdmin({clientId, onPaymentChanged, deposi
   const [busy,setBusy] = useState(false);
   const [error,setError] = useState('');
   const [openingDocument,setOpeningDocument] = useState<string|null>(null);
+  const [replacingInvoice,setReplacingInvoice] = useState(false);
   const headers = {Authorization:`Bearer ${localStorage.getItem('token')}`};
   const load = useCallback(async (signal?:AbortSignal) => {
     const res=await fetch(`http://localhost:3000/api/clients/${clientId}/documents`,{headers:{Authorization:`Bearer ${localStorage.getItem('token')}`},signal,cache:'no-store'});
@@ -18,7 +19,7 @@ export default function ClientDocumentsAdmin({clientId, onPaymentChanged, deposi
   useEffect(()=>{setUrl(info?.signature_url || '');},[info?.signature_url]);
   useEffect(()=>{
     const controller=new AbortController();
-    setInfo(null);setError('');
+    setInfo(null);setError('');setReplacingInvoice(false);
     const refresh=()=>{load(controller.signal).catch(err=>{if(!controller.signal.aborted)setError(err.message);});};
     refresh();const timer=setInterval(refresh,5000);
     window.addEventListener('focus',refresh);
@@ -48,7 +49,7 @@ export default function ClientDocumentsAdmin({clientId, onPaymentChanged, deposi
       const path=`${clientId}/documents/invoice`;
       const res=await fetch(`http://localhost:3000/api/clients/${path}`,{method:'PUT',headers:{...headers,'Content-Type':'application/pdf'},body:file});
       const data=await res.json();if(!res.ok)throw new Error(data.message);
-      await load();toast.success('PDF enregistré.');
+      await load();setReplacingInvoice(false);toast.success('PDF enregistré.');
     }catch(err){toast.error((err as Error).message);}finally{setBusy(false);}
   };
   const openIdentity = async(kind:string,preview=false)=>{
@@ -81,7 +82,7 @@ export default function ClientDocumentsAdmin({clientId, onPaymentChanged, deposi
   const primary='inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 disabled:cursor-wait disabled:opacity-50';
   const secondary='inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700';
   const badge=(done:boolean,label:string)=> <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${done?'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300':'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-300'}`}>{done?<Check size={12}/>:<Clock3 size={12}/>} {label}</span>;
-  const nextAction=!signed?'Faire signer les CGV':received<4?'Attendre les justificatifs du client':!paid?'Vérifier la réception du virement':!info?.invoice?'Ajouter la facture d’acompte':'Le dossier est à jour';
+  const nextAction=!signed?'Faire signer les CGV':received<4?'Attendre les justificatifs du client':!paid?'Vérifier la réception du virement':null;
   return <div className="space-y-5 text-gray-900 dark:text-gray-100">
     <header className="rounded-2xl border border-gray-200 bg-gray-50/70 p-5 dark:border-gray-700 dark:bg-gray-900/40 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -89,7 +90,7 @@ export default function ClientDocumentsAdmin({clientId, onPaymentChanged, deposi
         {info?.youtrust_enabled&&info.youtrust_environment==='sandbox'&&<span className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300">Test sandbox</span>}
       </div>
       <div className="mt-5 grid grid-cols-3 gap-2" aria-label="Progression du dossier">{[{label:'Signature',done:signed},{label:'Justificatifs',done:received===4},{label:'Acompte',done:paid}].map((item,i)=><div key={item.label} className="min-w-0"><div className={`h-1.5 rounded-full ${item.done?'bg-emerald-500':'bg-gray-200 dark:bg-gray-700'}`}/><p className="mt-2 flex items-center gap-1.5 text-xs font-medium sm:text-sm"><span className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] ${item.done?'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300':'bg-white text-gray-500 dark:bg-gray-700 dark:text-gray-300'}`}>{item.done?<Check size={12}/>:i+1}</span><span className="sm:hidden">{item.label==='Justificatifs'?'Pièces':item.label}</span><span className="hidden sm:inline">{item.label}</span></p></div>)}</div>
-      <div className="mt-5 flex items-center gap-2 border-t border-gray-200 pt-4 text-sm dark:border-gray-700"><ArrowRight size={16} className="shrink-0 text-blue-600"/><p className="font-medium">{nextAction}</p><span className="ml-auto shrink-0 text-xs tabular-nums text-gray-400">{completed}/3</span></div>
+      {nextAction&&<div className="mt-5 flex items-center gap-2 border-t border-gray-200 pt-4 text-sm dark:border-gray-700"><ArrowRight size={16} className="shrink-0 text-blue-600"/><p className="font-medium">{nextAction}</p><span className="ml-auto shrink-0 text-xs tabular-nums text-gray-400">{completed}/3</span></div>}
     </header>
     {error&&<p role="alert" className="flex items-start gap-2 rounded-xl bg-red-50 p-4 text-sm text-red-700"><AlertCircle size={18} className="shrink-0"/>{error}</p>}
 
@@ -131,8 +132,6 @@ export default function ClientDocumentsAdmin({clientId, onPaymentChanged, deposi
             </div>}
           </div>;
         })}</div>
-        <p className="text-xs text-gray-400">Mise à jour automatique toutes les 5 secondes.</p>
-        <button disabled={busy} onClick={()=>load().catch(err=>toast.error(err.message))} className="inline-flex items-center gap-2 text-xs font-medium text-gray-500 transition hover:text-blue-600 disabled:opacity-50 dark:text-gray-400 dark:hover:text-blue-300"><RefreshCw size={13}/>Actualiser les documents</button>
       </div>
     </section>
 
@@ -141,8 +140,15 @@ export default function ClientDocumentsAdmin({clientId, onPaymentChanged, deposi
       <div className="space-y-5 p-5">
         {depositContent}
         <label className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition ${paid?'border-emerald-200 bg-emerald-50/60 dark:border-emerald-800 dark:bg-emerald-900/20':'border-gray-200 hover:border-blue-200 dark:border-gray-700'}`}><input type="checkbox" aria-label="Confirmer la réception du paiement" disabled={busy||!info} checked={paid} onChange={e=>save({payment_confirmed:e.target.checked})} className="mt-0.5 h-4 w-4 rounded border-gray-300 accent-blue-600"/><span><span className="block text-sm font-semibold text-gray-900 dark:text-gray-100">{paid?'Réception du paiement confirmée':'Confirmer la réception du virement'}</span><span className="mt-1 block text-xs leading-5 text-gray-500 dark:text-gray-400">{info?.payment_declared_at&&!paid?'Le client a déclaré son virement. Vérifiez sa réception avant de confirmer.':'Cette confirmation rend la facture disponible dans l’espace client.'}</span></span></label>
-        <div className="flex flex-wrap items-center gap-4 rounded-xl border border-gray-200 p-4 dark:border-gray-700"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-300"><FileText size={20}/></span><div className="min-w-0 flex-1"><p className="text-sm font-semibold">Facture d’acompte</p><p className="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">{info?.invoice?(paid?'Disponible dans l’espace client':'PDF ajouté · En attente de confirmation du paiement'):'Ajoutez le PDF à remettre au client.'}</p></div><label className={`${secondary} cursor-pointer focus-within:ring-4 focus-within:ring-blue-100`}><Upload size={15}/>{busy?'Envoi…':info?.invoice?'Remplacer':'Ajouter le PDF'}<input aria-label="Importer la facture" disabled={busy} type="file" accept="application/pdf,.pdf" className="sr-only" onChange={e=>{uploadInvoice(e.target.files?.[0]);e.target.value='';}}/></label></div>
-        <p className="flex items-center gap-1.5 text-xs text-gray-400"><ShieldCheck size={13}/>PDF uniquement · 10 Mo maximum</p>
+        <div className="space-y-4 rounded-xl border border-gray-200 p-4 dark:border-gray-700">
+          <div className="flex flex-wrap items-center gap-4">
+            <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${info.invoice?'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-300':'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-300'}`}>{info.invoice?<FileCheck2 size={20}/>:<FileText size={20}/>}</span>
+            <div className="min-w-0 flex-1"><p className="text-sm font-semibold">Facture d’acompte</p>{info.invoice?<><p className="mt-1 inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-300"><Check size={13}/>Facture ajoutée</p><p className="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">{paid?'Disponible dans l’espace client':'Disponible après confirmation du paiement'}</p></>:<p className="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">Ajoutez le PDF à remettre au client.</p>}</div>
+            {info.invoice?!replacingInvoice&&<button type="button" disabled={busy} onClick={()=>setReplacingInvoice(true)} className={secondary}><Pencil size={15}/>Modifier le PDF</button>:<label className={`${secondary} cursor-pointer focus-within:ring-4 focus-within:ring-blue-100`}><Upload size={15}/>{busy?'Envoi…':'Ajouter le PDF'}<input aria-label="Importer la facture" disabled={busy} type="file" accept="application/pdf,.pdf" className="sr-only" onChange={e=>{uploadInvoice(e.target.files?.[0]);e.target.value='';}}/></label>}
+          </div>
+          {info.invoice&&replacingInvoice&&<div className="space-y-3 border-t border-gray-100 pt-4 dark:border-gray-700"><p className="text-xs font-medium text-gray-600 dark:text-gray-300">Choisissez le nouveau PDF pour remplacer la facture actuelle.</p><div className="flex flex-wrap gap-2"><label className={`${secondary} cursor-pointer focus-within:ring-4 focus-within:ring-blue-100`}><Upload size={15}/>{busy?'Envoi…':'Choisir le nouveau PDF'}<input aria-label="Remplacer la facture" disabled={busy} type="file" accept="application/pdf,.pdf" className="sr-only" onChange={e=>{uploadInvoice(e.target.files?.[0]);e.target.value='';}}/></label><button type="button" disabled={busy} onClick={()=>setReplacingInvoice(false)} className="rounded-lg px-3 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 disabled:opacity-50 dark:text-gray-400 dark:hover:bg-gray-700">Annuler</button></div></div>}
+          {(!info.invoice||replacingInvoice)&&<p className="flex items-center gap-1.5 text-xs text-gray-400"><ShieldCheck size={13}/>PDF uniquement · 10 Mo maximum</p>}
+        </div>
       </div>
     </section>
   </div>;

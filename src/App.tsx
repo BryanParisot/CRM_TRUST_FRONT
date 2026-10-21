@@ -1,5 +1,5 @@
 import { Toaster } from "react-hot-toast";
-import { Route, BrowserRouter as Router, Routes, useLocation } from 'react-router-dom';
+import { Navigate, Route, BrowserRouter as Router, Routes, useLocation } from 'react-router-dom';
 import Layout from './components/Layout';
 import ClientPortalLayout from './components/ClientPortalLayout';
 import ClientDeliveryPage from './pages/ClientDeliveryPage';
@@ -12,7 +12,6 @@ import ClientPublicRouter from "./pages/ClientRouterPublic";
 import ClientSelectionConfirmation from "./pages/ClientSelectionConfirmation";
 import Dashboard from './pages/Dashboard';
 import Login from "./pages/Login";
-import Metrics from './pages/Metrics';
 import ClientChecklistPage from "./pages/ClientChecklistPage";
 import ClientSuccessPage from "./pages/ClientSuccessPage";
 import ClientPaymentThankYouPage from "./pages/ClientPaymentThankYouPage";
@@ -53,7 +52,8 @@ export function App() {
             <Route path="/clients" element={<ClientsList />} />
             <Route path="/client/:id" element={<ClientDetail />} />
             <Route path="/client/:id/profile" element={<ClientProfile />} />
-            <Route path="/metrics" element={<Metrics />} />
+            <Route path="/metrics/*" element={<Navigate to="/" replace />} />
+            <Route path="/partners/*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>
 

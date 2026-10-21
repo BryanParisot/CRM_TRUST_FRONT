@@ -5,6 +5,7 @@ import {Link, useNavigate, useParams} from 'react-router-dom';
 import DeleteClientModal from '../components/DeleteClientModal';
 import EditClientModal from '../components/EditClientModal';
 import {PIPELINE_STAGES} from '../utils/pipeline';
+import {vehicleSearchLabels, type AdditionalVehicle} from '../utils/vehiclePreferences';
 
 type EditForm = ComponentProps<typeof EditClientModal>['clientData'];
 interface ClientData {
@@ -25,6 +26,7 @@ interface ClientData {
   budget?: string | number | null;
   description?: string | null;
   premiere_immat?: string | null;
+  additional_vehicles?: AdditionalVehicle[];
 }
 const primary = 'inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200';
 const secondary = 'inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-600 transition hover:border-blue-200 hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300';
@@ -163,7 +165,7 @@ export default function ClientProfile() {
           <div className="flex items-center gap-2.5 border-b border-gray-100 px-5 py-4 dark:border-gray-700"><Car size={17} className="text-gray-400"/><h2 id="vehicle-title" className="text-sm font-semibold text-gray-900 dark:text-gray-100">Recherche de véhicule</h2></div>
           <div className="p-5">
             <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-900/50">
-              <div className="min-w-0"><p className="text-xs text-gray-500 dark:text-gray-400">Marque & modèle</p><p className="mt-1.5 break-words text-base font-semibold text-gray-800 dark:text-gray-100">{[client.marque, client.modele].filter(Boolean).join(' ') || 'Véhicule à définir'}</p></div>
+              <div className="min-w-0"><p className="text-xs text-gray-500 dark:text-gray-400">Véhicules envisagés</p><p className="mt-1.5 break-words text-base font-semibold text-gray-800 dark:text-gray-100">{vehicleSearchLabels(client).join(' / ') || 'Véhicule à définir'}</p></div>
               <div><p className="text-xs text-gray-500 dark:text-gray-400">Budget véhicule</p><p className="mt-1.5 text-base font-semibold tabular-nums text-gray-800 dark:text-gray-100">{numberWithUnit(client.budget, '€') || 'À définir'}</p></div>
             </div>
             <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-3">

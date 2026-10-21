@@ -1,7 +1,6 @@
 import {
   BarChartIcon,
   BellIcon,
-  HandshakeIcon,
   LayoutDashboardIcon,
   LogOutIcon,
   MenuIcon,
@@ -84,8 +83,7 @@ const Layout: React.FC = () => {
   const navigation=[
     {path:'/',label:'Pipeline',icon:LayoutDashboardIcon},
     {path:'/clients',label:'Clients',icon:UsersIcon},
-    {path:'/metrics',label:'Métriques',icon:BarChartIcon},
-    {path:'/partners',label:'Partenaires',icon:HandshakeIcon},
+    {path:'/metrics',label:'Métriques',icon:BarChartIcon,disabled:true},
     {path:'/settings',label:'Paramètres',icon:SettingsIcon},
   ];
   const pageTitle=location.pathname.startsWith('/client/')?'Dossier client':navigation.find(item=>item.path===location.pathname)?.label||'Cartrust';
@@ -98,6 +96,7 @@ const Layout: React.FC = () => {
         <button aria-label="Fermer la navigation" onClick={closeSidebar} className="ml-auto rounded-lg p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 lg:hidden"><XIcon size={20}/></button>
       </div>
       <nav className="flex-1 px-3 py-6"><p className={`mb-3 px-3 text-[10px] font-semibold uppercase tracking-widest text-gray-400 ${collapsed?'lg:sr-only':''}`}>Espace de travail</p><ul className="space-y-1.5">{navigation.map(item=>{
+        if(item.disabled)return <li key={item.path}><button type="button" disabled aria-disabled="true" aria-label={item.label} title={`${item.label} — Indisponible pour le moment`} className={`group relative flex min-h-11 w-full cursor-not-allowed items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium text-gray-300 dark:text-gray-600 ${collapsed?'lg:justify-center lg:px-0':''}`}><item.icon size={20} strokeWidth={1.7} className="shrink-0"/><span className={collapsed?'lg:sr-only':''}>{item.label}</span>{collapsed&&<span aria-hidden="true" className="pointer-events-none absolute left-full z-50 ml-4 hidden whitespace-nowrap rounded-lg bg-gray-900 px-3 py-2 text-xs font-medium text-white shadow-lg lg:group-hover:block dark:bg-gray-700">{item.label} · Indisponible</span>}</button></li>;
         const active=isActive(item.path)||(item.path==='/clients'&&location.pathname.startsWith('/client/'));
         return <li key={item.path}><Link to={item.path} onClick={closeSidebar} aria-label={item.label} aria-current={active?'page':undefined} title={collapsed?item.label:undefined} className={`group relative flex min-h-11 items-center gap-3 rounded-xl px-3 py-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${collapsed?'lg:justify-center lg:px-0':''} ${active?'bg-blue-50 font-semibold text-blue-700 dark:bg-blue-900/25 dark:text-blue-300':'font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white'}`}><item.icon size={20} strokeWidth={active?2:1.7} className="shrink-0"/><span className={collapsed?'lg:sr-only':''}>{item.label}</span>{collapsed&&<span aria-hidden="true" className="pointer-events-none absolute left-full z-50 ml-4 hidden whitespace-nowrap rounded-lg bg-gray-900 px-3 py-2 text-xs font-medium text-white shadow-lg lg:group-hover:block lg:group-focus-visible:block dark:bg-gray-700">{item.label}</span>}</Link></li>;
       })}</ul></nav>

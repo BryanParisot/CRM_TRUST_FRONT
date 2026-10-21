@@ -16,7 +16,7 @@ import {
   Wallet,
   X
 } from 'lucide-react';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import vehicleData from '../data/vehicles.json';
 
 export interface NewClientFormData {
@@ -69,6 +69,7 @@ const NewClientModal: React.FC<NewClientModalProps> = ({
   onClose,
   onSubmit
 }) => {
+  const formRef = useRef<HTMLFormElement>(null);
   const [step, setStep] = useState(1);
   const [direction, setDirection] = useState(0);
   const [formData, setFormData] = useState<NewClientFormData>({
@@ -111,7 +112,7 @@ const NewClientModal: React.FC<NewClientModalProps> = ({
   const handleNext = () => {
     if (step === 1) {
       // Basic validation for step 1
-      if (formData.first_name.trim() && formData.last_name.trim() && formData.email && formData.phone) {
+      if (formRef.current?.reportValidity() && formData.first_name.trim() && formData.last_name.trim()) {
         setDirection(1);
         setStep(2);
       }
@@ -131,6 +132,8 @@ const NewClientModal: React.FC<NewClientModalProps> = ({
     // Convert numeric fields
     const submissionData: ClientSubmissionData = {
       ...formData,
+      email: formData.email.trim(),
+      phone: formData.phone.trim(),
       budget: Number(formData.budget) || 0,
       max_km: Number(formData.max_km) || 0,
       first_registration: Number(formData.first_registration) || 0,
@@ -220,7 +223,7 @@ const NewClientModal: React.FC<NewClientModalProps> = ({
 
               {/* Body */}
               <div className="flex-1 overflow-y-auto p-6">
-                <form onSubmit={handleSubmit} className="h-full flex flex-col">
+                <form ref={formRef} onSubmit={handleSubmit} className="h-full flex flex-col">
                   <AnimatePresence mode="wait" custom={direction}>
                     {step === 1 ? (
                       <motion.div
@@ -249,7 +252,7 @@ const NewClientModal: React.FC<NewClientModalProps> = ({
                             </div>
                           ))}
                           <div>
-                            <label className={labelClasses}>Email</label>
+                            <label className={labelClasses}>Email <span className="text-xs font-normal text-gray-400">(facultatif)</span></label>
                             <div className="relative">
                               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                               <input
@@ -259,14 +262,13 @@ const NewClientModal: React.FC<NewClientModalProps> = ({
                                 onChange={handleChange}
                                 onFocus={() => setFocusedField('email')}
                                 onBlur={() => setFocusedField(null)}
-                                required
                                 className={inputClasses('email')}
                                 placeholder="jean@example.com"
                               />
                             </div>
                           </div>
                           <div>
-                            <label className={labelClasses}>Téléphone</label>
+                            <label className={labelClasses}>Téléphone <span className="text-xs font-normal text-gray-400">(facultatif)</span></label>
                             <div className="relative">
                               <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                               <input
@@ -276,14 +278,13 @@ const NewClientModal: React.FC<NewClientModalProps> = ({
                                 onChange={handleChange}
                                 onFocus={() => setFocusedField('phone')}
                                 onBlur={() => setFocusedField(null)}
-                                required
                                 className={inputClasses('phone')}
                                 placeholder="06 12 34 56 78"
                               />
                             </div>
                           </div>
                           <div>
-                            <label className={labelClasses}>Date de Naissance</label>
+                            <label className={labelClasses}>Date de naissance <span className="text-xs font-normal text-gray-400">(facultatif)</span></label>
                             <div className="relative">
                               <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                               <input

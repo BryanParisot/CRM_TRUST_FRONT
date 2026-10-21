@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router-dom';
 import { ArrowRight, Check, Clock3, Compass, User, Car } from 'lucide-react';
 import { usePortalClient } from '../components/ClientPortalLayout';
 import { clientPortalSteps, currentClientStepPath } from '../utils/clientPortal';
+import {vehicleSearchLabels} from '../utils/vehiclePreferences';
 
 export default function ClientOverviewPage(){
   const client=usePortalClient();const {token}=useParams();
@@ -9,7 +10,8 @@ export default function ClientOverviewPage(){
   const value=(value:unknown)=>value===null||value===undefined||value===''?'Non renseigné':String(value);
   const number=(amount:string|number|null,suffix:string)=>amount===null||amount===''||!Number.isFinite(Number(amount))?'Non renseigné':`${Number(amount).toLocaleString('fr-FR')} ${suffix}`;
   const identity=[...(client.first_name||client.last_name?[{label:'Prénom',value:client.first_name},{label:'Nom',value:client.last_name}]:[{label:'Nom complet',value:client.name}]),{label:'Adresse email',value:client.email},{label:'Téléphone',value:client.phone}];
-  const criteria=[{label:'Marque',value:client.marque},{label:'Modèle',value:client.modele},{label:'Budget véhicule',value:number(client.budget,'€')},{label:'Kilométrage maximum',value:number(client.max_km,'km')},{label:'Carburant',value:client.carburant},{label:'Boîte de vitesses',value:client.boite},{label:'Couleur',value:client.couleur},{label:'Année minimum',value:client.premiere_immat},{label:'Puissance minimum',value:number(client.puissance_min,'ch')}];
+  const searches=vehicleSearchLabels(client);
+  const criteria=[...(client.additional_vehicles?.length?[{label:'Véhicules envisagés',value:searches.join(' / ')}]:[{label:'Marque',value:client.marque},{label:'Modèle',value:client.modele}]),{label:'Budget véhicule',value:number(client.budget,'€')},{label:'Kilométrage maximum',value:number(client.max_km,'km')},{label:'Carburant',value:client.carburant},{label:'Boîte de vitesses',value:client.boite},{label:'Couleur',value:client.couleur},{label:'Année minimum',value:client.premiere_immat},{label:'Puissance minimum',value:number(client.puissance_min,'ch')}];
   return <main className="px-4 py-6 sm:py-8"><div className="mx-auto max-w-3xl space-y-6">
     <div><h1 className="text-2xl font-semibold tracking-tight">Mon dossier</h1><p className="mt-2 text-sm leading-6 text-gray-500">Vos informations et l’avancement de votre accompagnement, au même endroit.</p></div>
     <section className="rounded-2xl border border-blue-100 bg-white p-5 sm:p-6"><div className="flex items-start gap-3"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600"><Compass size={23}/></span><div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-widest text-blue-600">Étape {client.step} sur 6 · En cours</p><h2 className="mt-2 text-xl font-semibold">{step.label}</h2><p className="mt-2 text-sm leading-6 text-gray-500">{step.description}</p><Link to={client.step<=1?`/client-link/${token}/overview#informations`:currentClientStepPath(token!,client.step)} className="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">{client.step<=1?'Voir mes informations':'Reprendre cette étape'}<ArrowRight size={16}/></Link></div></div></section>

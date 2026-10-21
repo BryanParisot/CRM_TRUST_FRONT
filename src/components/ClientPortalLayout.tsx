@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation, useParams } from 'react-router-dom';
 import { ArrowRight, Car, FileText, LayoutDashboard, Loader2 } from 'lucide-react';
 import { currentClientStepPath } from '../utils/clientPortal';
 import { availableClientDocuments, type ClientDocumentsInfo } from '../utils/clientDocuments';
+import type {AdditionalVehicle} from '../utils/vehiclePreferences';
 
 export interface PortalClient {
   id:number;name:string;first_name:string|null;last_name:string|null;
@@ -10,6 +11,7 @@ export interface PortalClient {
   marque:string|null;modele:string|null;couleur:string|null;carburant:string|null;
   premiere_immat:string|null;budget:string|null;max_km:number|null;
   description:string|null;puissance_min:number|null;boite:string|null;
+  additional_vehicles?: AdditionalVehicle[];
 }
 const PortalContext=createContext<PortalClient|null>(null);
 const DocumentsContext=createContext<{info:ClientDocumentsInfo|null;error:string;retry:()=>void}|null>(null);

@@ -113,7 +113,7 @@ const EditClientModal: React.FC<EditClientModalProps> = ({
 
                                 <div>
                                     <label htmlFor="email" className="block text-sm font-medium mb-1">
-                                        Email <span className="text-red-500">*</span>
+                                        Email <span className="text-xs font-normal text-gray-400">(facultatif)</span>
                                     </label>
                                     <input
                                         type="email"
@@ -121,7 +121,6 @@ const EditClientModal: React.FC<EditClientModalProps> = ({
                                         name="email"
                                         value={formData.email}
                                         onChange={handleChange}
-                                        required
                                         disabled={isUpdating}
                                         className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50"
                                     />
@@ -129,7 +128,7 @@ const EditClientModal: React.FC<EditClientModalProps> = ({
 
                                 <div>
                                     <label htmlFor="phone" className="block text-sm font-medium mb-1">
-                                        Téléphone <span className="text-red-500">*</span>
+                                        Téléphone <span className="text-xs font-normal text-gray-400">(facultatif)</span>
                                     </label>
                                     <input
                                         type="tel"
@@ -137,7 +136,6 @@ const EditClientModal: React.FC<EditClientModalProps> = ({
                                         name="phone"
                                         value={formData.phone}
                                         onChange={handleChange}
-                                        required
                                         disabled={isUpdating}
                                         className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50"
                                     />

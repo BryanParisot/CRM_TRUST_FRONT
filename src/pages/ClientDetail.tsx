@@ -1,11 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ComponentProps } from "react";
 import { useParams } from "react-router-dom";
+import toast from 'react-hot-toast';
 
 import Breadcrumb from "../components/Breadcrumb";
 import ClientHeader from "../components/ClientHeader";
 import ClientInfoTab from "../components/ClientInfoTab";
 import ClientSelectionTab from "../components/ClientSelectionTab";
 import DeliveryTab from "../components/DeliveryTab";
+import EditClientModal from '../components/EditClientModal';
 import DepositAndIdTab from "../components/DepositAndIdTab";
 import DocumentsAndPaymentTab from "../components/DocumentsAndPaymentTab";
 import GarageChecklistTab from "../components/GarageChecklistTab";
@@ -13,6 +15,7 @@ import Sidebar from "../components/Sidebar";
 import TabsNavigation from "../components/TabsNavigation";
 import VehicleChecklistModal from "../components/VehicleChecklistModal";
 import { DEFAULT_CHECKLIST_ITEMS } from '../utils/vehicleChecklist';
+import type {AdditionalVehicle} from '../utils/vehiclePreferences';
 
 // --- Interfaces ---
 interface TimelineEvent {
@@ -27,35 +30,26 @@ interface ClientData {
   id: string;
   name: string;
   first_name?: string | null;
+  additional_vehicles?: AdditionalVehicle[];
   last_name?: string | null;
   email: string;
   phone: string;
   marque: string;
   modele: string;
-  max_km: string;
+  max_km: string | number | null;
   couleur: string;
   carburant: string;
   boite: string;
-  puissance_min: number;
+  puissance_min: number | null;
   step: number;
   progress: number;
-  budget: string;
+  budget: string | number | null;
   description: string;
+  premiere_immat?: string | null;
   timeline: TimelineEvent[];
   vehicle: string;
   maxKm: string;
   vehicleColor: string;
-}
-
-interface Vehicle {
-  id: string;
-  name: string;
-  price: string;
-  mileage: number;
-  year: number;
-  image: string;
-  title: string;
-  link: string;
 }
 
 interface ChecklistItem {
@@ -97,15 +91,41 @@ const ClientDetail: React.FC = () => {
 
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [showEdit, setShowEdit] = useState(false);
+  const [updatingClient, setUpdatingClient] = useState(false);
+
+  const updateClient = async (form: ComponentProps<typeof EditClientModal>['clientData']) => {
+    if (!clientData || updatingClient) return;
+    setUpdatingClient(true);
+    try {
+      const body = {...form, vehicle_color: form.couleur, first_registration: form.premiere_immat,
+        budget: form.budget === '' ? null : Number(form.budget),
+        max_km: form.max_km === '' ? null : Number(form.max_km),
+        puissance_min: form.puissance_min === '' ? null : Number(form.puissance_min)};
+      const response = await fetch(`http://localhost:3000/api/clients/${clientData.id}`, {
+        method: 'PATCH', headers: {'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}`}, body: JSON.stringify(body),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Impossible de modifier les informations.');
+      setClientData(previous => previous ? {...previous, ...form, name: `${form.first_name.trim()} ${form.last_name.trim()}`, puissance_min: body.puissance_min} : previous);
+      setShowEdit(false);
+      toast.success('Informations enregistrées.');
+    } catch (error) {
+      toast.error((error as Error).message);
+    } finally {
+      setUpdatingClient(false);
+    }
+  };
 
 
   // ========== Sync activeTab avec step stocké en BDD ==========
+  const currentStep = clientData?.step;
   useEffect(() => {
-    if (clientData) {
-      setActiveTab(clientData.step);
+    if (currentStep !== undefined) {
+      setActiveTab(currentStep);
       setIsReady(true);
     }
-  }, [clientData]);
+  }, [currentStep, id]);
 
   // ========== Fetch Client ==========
   useEffect(() => {
@@ -262,14 +282,17 @@ const ClientDetail: React.FC = () => {
       <ClientHeader clientData={clientData} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <div className="lg:col-span-2">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+        <div className="min-w-0 lg:col-span-2">
+          <div className="min-w-0 rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
             <TabsNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
 
             <div className="p-4 sm:p-6">
               {activeTab === 1 && (
                 <ClientInfoTab
                   clientData={clientData}
+                  onEdit={() => setShowEdit(true)}
+                  onVehiclesChanged={vehicles => setClientData(previous => previous ? {...previous, additional_vehicles: vehicles} : previous)}
+                  onCriteriaChanged={criteria => setClientData(previous => previous ? {...previous, ...criteria} : previous)}
                 />
               )}
 
@@ -312,8 +335,22 @@ const ClientDetail: React.FC = () => {
           </div>
         </div>
 
-        <Sidebar clientData={clientData} />
+        <Sidebar clientData={clientData} onEdit={() => setShowEdit(true)} />
       </div>
+
+      <EditClientModal
+        isOpen={showEdit}
+        onClose={() => {if (!updatingClient) setShowEdit(false);}}
+        onSubmit={updateClient}
+        isUpdating={updatingClient}
+        clientData={{
+          name: clientData.name, first_name: clientData.first_name || '', last_name: clientData.last_name || '',
+          email: clientData.email || '', phone: clientData.phone || '', marque: clientData.marque || '', modele: clientData.modele || '',
+          budget: clientData.budget == null ? '' : String(clientData.budget), max_km: clientData.max_km == null ? '' : String(clientData.max_km),
+          carburant: clientData.carburant || '', boite: clientData.boite || '', puissance_min: clientData.puissance_min == null ? '' : String(clientData.puissance_min),
+          couleur: clientData.couleur || '', description: clientData.description || '', premiere_immat: clientData.premiere_immat || '',
+        }}
+      />
 
       {selectedVehicle && (
         <VehicleChecklistModal
