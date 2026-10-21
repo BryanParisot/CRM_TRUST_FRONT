@@ -50,6 +50,8 @@ interface Vehicle {
   mileage: string;
   image: string;
   selected_by?: string; // IMPORTANT
+  is_final_choice?:boolean;
+  final_choice_needs_reconfirmation?:boolean;
 }
 
 interface SidebarProps {
@@ -139,6 +141,7 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
   // Étape 2 → impossible si aucun véhicule sélectionné par le client
   const clientHasSelected = selectedVehicles.some(v => v.selected_by === "client");
   const lockStep2 = clientData.step === 2 && !clientHasSelected;
+  const lockStep4=clientData.step===4&&!selectedVehicles.some(vehicle=>vehicle.is_final_choice&&!vehicle.final_choice_needs_reconfirmation);
 
   // ==========================================
   // 🔗 GENERATE CLIENT LINK
@@ -208,7 +211,7 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
         }
       );
 
-      if (!res.ok) throw new Error();
+      const result=await res.json();if (!res.ok) throw new Error(result.message||'Impossible de revenir à cette étape.');
 
       toast.success(`Étape rétrogradée vers ${previousStep}`);
       window.location.reload();
@@ -249,12 +252,12 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
         }
       );
 
-      if (!res.ok) throw new Error();
+      const result=await res.json();if (!res.ok) throw new Error(result.message||'Impossible de valider cette étape.');
 
       toast.success(`Étape ${nextStep} validée 👍`);
       window.location.reload();
-    } catch {
-      toast.error("Erreur lors de la validation ❌");
+    } catch(error) {
+      toast.error((error as Error).message);
     } finally {
       setUpdating(false);
     }
@@ -401,8 +404,8 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
             {/* VALIDATE */}
             <button
               onClick={handleValidateStep}
-              disabled={updating || lockStep2 || clientData.step >= 6}
-              className={`w-full flex items-center justify-center py-2 px-4 rounded-md text-white transition ${updating || lockStep2 || clientData.step >= 6
+              disabled={updating || lockStep2 || lockStep4 || clientData.step >= 6}
+              className={`w-full flex items-center justify-center py-2 px-4 rounded-md text-white transition ${updating || lockStep2 || lockStep4 || clientData.step >= 6
                 ? "bg-blue-300 cursor-not-allowed"
                 : "bg-blue-600 hover:bg-blue-700"
                 }`}
@@ -419,6 +422,7 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
                   ? "Dernière étape"
                   : lockStep2
                     ? "Choix client requis"
+                    :lockStep4?'Choix définitif requis'
                     : `Valider étape ${clientData.step}`}
             </button>
 
@@ -446,7 +450,8 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
             {selectedVehicles.map((v) => (
               <div
                 key={v.id}
-                className="group relative flex items-center space-x-3 border rounded-lg p-2 hover:shadow-md transition"
+                data-proposal-not-chosen={selectedVehicles.some(vehicle=>vehicle.is_final_choice)&&!v.is_final_choice}
+                className={`group relative flex items-center space-x-3 border rounded-lg p-2 transition ${selectedVehicles.some(vehicle=>vehicle.is_final_choice)&&!v.is_final_choice?'border-gray-200 bg-gray-50 opacity-60 dark:border-gray-700 dark:bg-gray-900/50':'hover:shadow-md'}`}
               >
                 <button
                   onClick={() => handleRemoveVehicle(v.id)}
@@ -461,6 +466,7 @@ const Sidebar: React.FC<SidebarProps> = ({ clientData }) => {
                   <p className="text-xs text-gray-500 mt-1">
                     {v.selected_by === 'client' ? 'Retenu par le client' : v.selected_by === 'rejected' ? 'Refusé par le client' : 'En attente du client'}
                   </p>
+                  {v.is_final_choice&&<p className={`mt-2 text-xs font-semibold ${v.final_choice_needs_reconfirmation?'text-amber-700':'text-emerald-700 dark:text-emerald-400'}`}>{v.final_choice_needs_reconfirmation?'Choix à reconfirmer':'Choix définitif du client'}</p>}
                 </div>
               </div>
             ))}

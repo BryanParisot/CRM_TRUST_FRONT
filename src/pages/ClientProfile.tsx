@@ -1,392 +1,189 @@
-import {
-    ArrowLeft,
-    BadgeCheck,
-    Car,
-    Cog,
-    Edit2,
-    Fuel,
-    Gauge,
-    Mail,
-    Palette,
-    Phone,
-    Trash2,
-    User,
-    Wallet,
-    Zap,
-} from "lucide-react";
-import React, { useEffect, useState } from "react";
-import toast from "react-hot-toast";
-import { useNavigate, useParams } from "react-router-dom";
-import { ClipLoader } from "react-spinners";
-import DeleteClientModal from "../components/DeleteClientModal";
-import EditClientModal from "../components/EditClientModal";
+import {AlertCircle, ArrowLeft, ArrowUpRight, Car, Edit2, FileText, Loader2, Mail, Phone, Trash2, User} from 'lucide-react';
+import {useEffect, useState, type ComponentProps, type ReactNode} from 'react';
+import toast from 'react-hot-toast';
+import {Link, useNavigate, useParams} from 'react-router-dom';
+import DeleteClientModal from '../components/DeleteClientModal';
+import EditClientModal from '../components/EditClientModal';
+import {PIPELINE_STAGES} from '../utils/pipeline';
 
+type EditForm = ComponentProps<typeof EditClientModal>['clientData'];
 interface ClientData {
-    id: string;
-    name: string;
+  id: number | string;
+  name?: string | null;
   first_name?: string | null;
   last_name?: string | null;
-    email: string;
-    phone: string;
-    marque: string;
-    modele: string;
-    max_km: string;
-    couleur: string;
-    carburant: string;
-    boite: string;
-    puissance_min: number;
-    budget: string;
-    description: string;
-    premiere_immat?: string;
+  email?: string | null;
+  phone?: string | null;
+  step?: number;
+  marque?: string | null;
+  modele?: string | null;
+  max_km?: string | number | null;
+  couleur?: string | null;
+  carburant?: string | null;
+  boite?: string | null;
+  puissance_min?: string | number | null;
+  budget?: string | number | null;
+  description?: string | null;
+  premiere_immat?: string | null;
+}
+const primary = 'inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200';
+const secondary = 'inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-600 transition hover:border-blue-200 hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300';
+const panel = 'min-w-0 rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800';
+const headers = () => ({Authorization: `Bearer ${localStorage.getItem('token')}`});
+const asText = (value: string | number | null | undefined) => value == null ? '' : String(value);
+const numberWithUnit = (value: string | number | null | undefined, unit: string) => {
+  if (value == null || String(value).trim() === '' || !Number.isFinite(Number(value))) return '';
+  return `${Number(value).toLocaleString('fr-FR', {maximumFractionDigits: 0})} ${unit}`;
+};
+function Field({label, children}: {label: string; children?: ReactNode}) {
+  return <div className="min-w-0">
+    <dt className="text-xs text-gray-500 dark:text-gray-400">{label}</dt>
+    <dd className="mt-1.5 break-words text-sm font-medium text-gray-800 dark:text-gray-200">{children || <span className="font-normal text-gray-400 dark:text-gray-500">Non renseigné</span>}</dd>
+  </div>;
 }
 
-const ClientProfile: React.FC = () => {
-    const { id } = useParams<{ id: string }>();
-    const navigate = useNavigate();
+export default function ClientProfile() {
+  const {id} = useParams<{id: string}>();
+  const navigate = useNavigate();
+  const [record, setRecord] = useState<{id: string; data: ClientData} | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [retry, setRetry] = useState(0);
+  const [showEdit, setShowEdit] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const client = record && record.id === id ? record.data : null;
 
-    const [clientData, setClientData] = useState<ClientData | null>(null);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
-    const [showEditModal, setShowEditModal] = useState<boolean>(false);
-    const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
-    const [isUpdating, setIsUpdating] = useState<boolean>(false);
-    const [isDeleting, setIsDeleting] = useState<boolean>(false);
-
-    // Fetch client data
-    useEffect(() => {
-        const fetchClient = async () => {
-            try {
-                setLoading(true);
-                const res = await fetch(`http://localhost:3000/api/clients/${id}`, {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem("token")}`,
-                    },
-                });
-
-                if (!res.ok) throw new Error("Erreur lors du chargement du client");
-
-                const data = await res.json();
-                setClientData(data);
-            } catch (err: any) {
-                setError(err.message);
-                toast.error(err.message);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchClient();
-    }, [id]);
-
-    // Update client
-    const handleUpdateClient = async (formData: any) => {
-        try {
-            setIsUpdating(true);
-
-            const res = await fetch(`http://localhost:3000/api/clients/${id}`, {
-                method: "PATCH",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${localStorage.getItem("token")}`,
-                },
-                body: JSON.stringify(formData),
-            });
-
-            if (!res.ok) throw new Error("Erreur lors de la mise à jour");
-
-            toast.success("Client modifié avec succès ✅");
-            setShowEditModal(false);
-            window.location.reload();
-        } catch (error: any) {
-            toast.error(error.message || "Erreur lors de la mise à jour ❌");
-        } finally {
-            setIsUpdating(false);
-        }
-    };
-
-    // Delete client
-    const handleDeleteClient = async () => {
-        try {
-            setIsDeleting(true);
-
-            const res = await fetch(`http://localhost:3000/api/clients/${id}`, {
-                method: "DELETE",
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem("token")}`,
-                },
-            });
-
-            if (!res.ok) throw new Error("Erreur lors de la suppression");
-
-            toast.success("Client supprimé avec succès ✅");
-            setShowDeleteModal(false);
-            navigate("/");
-        } catch (error: any) {
-            toast.error(error.message || "Erreur lors de la suppression ❌");
-        } finally {
-            setIsDeleting(false);
-        }
-    };
-
-    // Get initials from name
-    const getInitials = (name: string) => {
-        return name
-            .split(" ")
-            .map((n) => n[0])
-            .join("")
-            .toUpperCase()
-            .slice(0, 2);
-    };
-
-    // Get badge color based on fuel type
-    const getFuelBadgeColor = (fuel: string) => {
-        const colors: { [key: string]: string } = {
-            Essence: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
-            Diesel: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-            Hybride: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-            Électrique: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
-        };
-        return colors[fuel] || "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300";
-    };
-
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="text-center">
-                    <ClipLoader size={50} color="#2563EB" />
-                    <p className="mt-4 text-gray-600 dark:text-gray-400">Chargement du profil...</p>
-                </div>
-            </div>
-        );
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    setError('');
+    setShowEdit(false);
+    setShowDelete(false);
+    async function load() {
+      try {
+        const response = await fetch(`http://localhost:3000/api/clients/${id}`, {headers: headers(), signal: controller.signal, cache: 'no-store'});
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Impossible de charger cette fiche client.');
+        if (!controller.signal.aborted) setRecord({id: id!, data});
+      } catch (error) {
+        if (!controller.signal.aborted) setError((error as Error).message);
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
     }
+    load();
+    return () => controller.abort();
+  }, [id, retry]);
 
-    if (error || !clientData) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="text-center">
-                    <p className="text-red-500 text-lg">{error || "Client non trouvé"}</p>
-                    <button
-                        onClick={() => navigate("/")}
-                        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                    >
-                        Retour au tableau de bord
-                    </button>
-                </div>
-            </div>
-        );
+  const updateClient = async (form: EditForm) => {
+    if (!client || updating) return;
+    setUpdating(true);
+    try {
+      const body = {...form, vehicle_color: form.couleur, first_registration: form.premiere_immat,
+        budget: form.budget === '' ? null : Number(form.budget),
+        max_km: form.max_km === '' ? null : Number(form.max_km),
+        puissance_min: form.puissance_min === '' ? null : Number(form.puissance_min)};
+      const response = await fetch(`http://localhost:3000/api/clients/${id}`, {method: 'PATCH', headers: {...headers(), 'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Impossible de modifier le client.');
+      setRecord(previous => previous && previous.id === id ? {id: previous.id, data: {...previous.data, ...body, name: `${form.first_name.trim()} ${form.last_name.trim()}`}} : previous);
+      setShowEdit(false);
+      toast.success('Client modifié.');
+    } catch (error) {
+      toast.error((error as Error).message);
+    } finally {
+      setUpdating(false);
     }
+  };
+  const deleteClient = async () => {
+    if (!client || deleting) return;
+    setDeleting(true);
+    try {
+      const response = await fetch(`http://localhost:3000/api/clients/${id}`, {method: 'DELETE', headers: headers()});
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Impossible de supprimer le client.');
+      toast.success('Client supprimé.');
+      navigate('/clients');
+    } catch (error) {
+      toast.error((error as Error).message);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
-    return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-8 px-4">
-            <div className="max-w-5xl mx-auto">
-                {/* Back Button */}
-                <button
-                    onClick={() => navigate("/")}
-                    className="mb-6 flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition"
-                >
-                    <ArrowLeft className="w-5 h-5 mr-2" />
-                    Retour au tableau de bord
-                </button>
+  const back = <Link to="/clients" className="inline-flex items-center gap-2 rounded text-sm text-gray-500 transition hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 dark:text-gray-400 dark:hover:text-blue-300"><ArrowLeft size={16}/>Tous les clients</Link>;
+  if (loading || (!client && !error)) return <section className="space-y-5">{back}<div role="status" className="flex min-h-64 items-center justify-center gap-2 text-sm text-gray-500"><Loader2 size={20} className="animate-spin"/>Chargement de la fiche client…</div></section>;
+  if (error || !client) return <section className="space-y-5">{back}<div role="alert" className={`${panel} flex flex-col items-center gap-4 p-8 text-center`}><AlertCircle size={24} className="text-red-500"/><p className="text-sm text-gray-600 dark:text-gray-300">{error || 'Client introuvable.'}</p><button onClick={() => setRetry(value => value + 1)} className={secondary}>Réessayer</button></div></section>;
 
-                {/* Header Card */}
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 mb-6 border border-gray-200 dark:border-gray-700">
-                    <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-                        {/* Avatar */}
-                        <div className="relative">
-                            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-3xl font-bold shadow-lg">
-                                {getInitials(clientData.name)}
-                            </div>
-                            <div className="absolute -bottom-2 -right-2 bg-green-500 rounded-full p-2 shadow-lg">
-                                <BadgeCheck className="w-5 h-5 text-white" />
-                            </div>
-                        </div>
+  const name = client.name?.trim() || [client.first_name, client.last_name].filter(Boolean).join(' ') || 'Client';
+  const words = name.split(/\s+/);
+  const initials = [words[0]?.[0], words.length > 1 ? words[words.length - 1]?.[0] : ''].join('').toUpperCase();
+  const stage = PIPELINE_STAGES.find(stage => stage.step === client.step);
+  const editData: EditForm = {
+    name, first_name: client.first_name || '', last_name: client.last_name || '',
+    email: client.email || '', phone: client.phone || '', marque: client.marque || '', modele: client.modele || '',
+    budget: asText(client.budget), max_km: asText(client.max_km), carburant: client.carburant || '', boite: client.boite || '',
+    puissance_min: asText(client.puissance_min), couleur: client.couleur || '', description: client.description || '', premiere_immat: client.premiere_immat || '',
+  };
 
-                        {/* Info */}
-                        <div className="flex-1 text-center md:text-left">
-                            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                                {clientData.name}
-                            </h1>
-                            <p className="text-gray-600 dark:text-gray-400 flex items-center justify-center md:justify-start gap-2">
-                                <Mail className="w-4 h-4" />
-                                {clientData.email}
-                            </p>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => setShowEditModal(true)}
-                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-md hover:shadow-lg"
-                            >
-                                <Edit2 className="w-4 h-4" />
-                                Modifier
-                            </button>
-                            <button
-                                onClick={() => setShowDeleteModal(true)}
-                                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition shadow-md hover:shadow-lg"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                                Supprimer
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Content Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Contact Information */}
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-700 hover:shadow-xl transition">
-                        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                            <User className="w-5 h-5 text-blue-600" />
-                            Informations de contact
-                        </h2>
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <Mail className="w-5 h-5 text-blue-600" />
-                                <div>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">Email</p>
-                                    <p className="font-medium text-gray-900 dark:text-white">{clientData.email}</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <Phone className="w-5 h-5 text-green-600" />
-                                <div>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">Téléphone</p>
-                                    <p className="font-medium text-gray-900 dark:text-white">{clientData.phone}</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <Wallet className="w-5 h-5 text-purple-600" />
-                                <div>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">Budget</p>
-                                    <p className="font-medium text-gray-900 dark:text-white">{clientData.budget} €</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Vehicle Preferences */}
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-700 hover:shadow-xl transition">
-                        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                            <Car className="w-5 h-5 text-blue-600" />
-                            Préférences véhicule
-                        </h2>
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <Car className="w-5 h-5 text-blue-600" />
-                                <div>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">Marque & Modèle</p>
-                                    <p className="font-medium text-gray-900 dark:text-white">
-                                        {clientData.marque} {clientData.modele}
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <Gauge className="w-5 h-5 text-orange-600" />
-                                <div>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">Kilométrage Max</p>
-                                    <p className="font-medium text-gray-900 dark:text-white">{clientData.max_km} km</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <Palette className="w-5 h-5 text-pink-600" />
-                                <div>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">Couleur</p>
-                                    <p className="font-medium text-gray-900 dark:text-white">{clientData.couleur}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Technical Specifications */}
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-700 hover:shadow-xl transition">
-                        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                            <Cog className="w-5 h-5 text-blue-600" />
-                            Caractéristiques techniques
-                        </h2>
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <div className="flex items-center gap-3">
-                                    <Fuel className="w-5 h-5 text-orange-600" />
-                                    <div>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">Carburant</p>
-                                        <p className="font-medium text-gray-900 dark:text-white">{clientData.carburant}</p>
-                                    </div>
-                                </div>
-                                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getFuelBadgeColor(clientData.carburant)}`}>
-                                    {clientData.carburant}
-                                </span>
-                            </div>
-                            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <div className="flex items-center gap-3">
-                                    <Cog className="w-5 h-5 text-blue-600" />
-                                    <div>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">Boîte de vitesse</p>
-                                        <p className="font-medium text-gray-900 dark:text-white">{clientData.boite}</p>
-                                    </div>
-                                </div>
-                                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                                    {clientData.boite}
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <Zap className="w-5 h-5 text-yellow-600" />
-                                <div>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">Puissance minimale</p>
-                                    <p className="font-medium text-gray-900 dark:text-white">{clientData.puissance_min} CV</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Description */}
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-700 hover:shadow-xl transition">
-                        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                            Notes & Détails
-                        </h2>
-                        <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border-l-4 border-blue-600">
-                            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                                {clientData.description || "Aucune description disponible."}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Modals */}
-            <EditClientModal
-                isOpen={showEditModal}
-                onClose={() => setShowEditModal(false)}
-                onSubmit={handleUpdateClient}
-                clientData={{
-                    name: clientData.name,
-          first_name: clientData.first_name || "",
-          last_name: clientData.last_name || "",
-                    email: clientData.email,
-                    phone: clientData.phone,
-                    marque: clientData.marque,
-                    modele: clientData.modele,
-                    budget: clientData.budget,
-                    max_km: clientData.max_km,
-                    carburant: clientData.carburant,
-                    boite: clientData.boite,
-                    puissance_min: String(clientData.puissance_min),
-                    couleur: clientData.couleur,
-                    description: clientData.description,
-                    premiere_immat: clientData.premiere_immat || "",
-                }}
-                isUpdating={isUpdating}
-            />
-
-            <DeleteClientModal
-                isOpen={showDeleteModal}
-                onClose={() => setShowDeleteModal(false)}
-                onConfirm={handleDeleteClient}
-                clientName={clientData.name}
-                isDeleting={isDeleting}
-            />
+  return <section className="min-w-0 space-y-5">
+    {back}
+    <header className={panel}>
+      <div className="flex flex-wrap items-center justify-between gap-5 p-5 sm:p-6">
+        <div className="flex min-w-0 flex-1 basis-64 items-center gap-4">
+          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-lg font-semibold text-blue-600 dark:bg-blue-900/30 dark:text-blue-300">{initials}</span>
+          <div className="min-w-0"><p className="mb-1 text-xs text-gray-400">Fiche client · Dossier #{client.id}</p><h1 className="break-words text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">{name}</h1></div>
         </div>
-    );
-};
+        <div className="grid w-full grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 sm:flex sm:w-auto sm:flex-wrap">
+          <Link to={`/client/${id}`} className={primary}>Ouvrir le dossier<ArrowUpRight size={16}/></Link>
+          <button onClick={() => setShowEdit(true)} aria-label="Modifier le client" title="Modifier le client" className={secondary}><Edit2 size={15}/><span className="hidden sm:inline">Modifier</span></button>
+          <button onClick={() => setShowDelete(true)} aria-label={`Supprimer ${name}`} title="Supprimer le client" className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-gray-400 transition hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 dark:hover:bg-red-900/20"><Trash2 size={16}/></button>
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-4 border-t border-gray-100 px-5 py-4 dark:border-gray-700 sm:px-6">
+        <div className="flex flex-wrap items-center gap-3"><span className={`inline-flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium ${stage?.badge || 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-300'}`}><span className={`h-1.5 w-1.5 rounded-full ${stage?.accent || 'bg-gray-400'}`}/>{stage?.title || 'Étape à préciser'}</span>{stage && <p className="text-xs text-gray-500 dark:text-gray-400">{stage.description}</p>}</div>
+        <div className="flex items-center gap-3"><span className="text-xs tabular-nums text-gray-400">{stage ? `Étape ${stage.step} sur ${PIPELINE_STAGES.length}` : 'Parcours à préciser'}</span><div className="grid w-28 grid-cols-6 gap-1" aria-hidden="true">{PIPELINE_STAGES.map(item => <span key={item.step} className={`h-1 rounded-full ${stage && item.step <= stage.step ? stage.accent : 'bg-gray-100 dark:bg-gray-700'}`}/>)}</div></div>
+      </div>
+    </header>
 
-export default ClientProfile;
+    <div className="grid items-start gap-5 lg:grid-cols-3">
+      <section aria-labelledby="contact-title" className={panel}>
+        <div className="flex items-center gap-2.5 border-b border-gray-100 px-5 py-4 dark:border-gray-700"><User size={17} className="text-gray-400"/><h2 id="contact-title" className="text-sm font-semibold text-gray-900 dark:text-gray-100">Coordonnées</h2></div>
+        <dl className="space-y-5 p-5">
+          <div className="grid grid-cols-2 gap-4"><Field label="Prénom">{client.first_name}</Field><Field label="Nom">{client.last_name}</Field></div>
+          <Field label="Email">{client.email && <a href={`mailto:${client.email}`} className="inline-flex max-w-full items-start gap-2 hover:text-blue-600 dark:hover:text-blue-300"><Mail size={14} className="mt-0.5 shrink-0 text-gray-400"/><span className="min-w-0 break-all">{client.email}</span></a>}</Field>
+          <Field label="Téléphone">{client.phone && <a href={`tel:${client.phone.replace(/\s/g, '')}`} className="inline-flex items-center gap-2 hover:text-blue-600 dark:hover:text-blue-300"><Phone size={14} className="shrink-0 text-gray-400"/>{client.phone}</a>}</Field>
+        </dl>
+      </section>
+
+      <div className="min-w-0 space-y-5 lg:col-span-2">
+        <section aria-labelledby="vehicle-title" className={panel}>
+          <div className="flex items-center gap-2.5 border-b border-gray-100 px-5 py-4 dark:border-gray-700"><Car size={17} className="text-gray-400"/><h2 id="vehicle-title" className="text-sm font-semibold text-gray-900 dark:text-gray-100">Recherche de véhicule</h2></div>
+          <div className="p-5">
+            <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-900/50">
+              <div className="min-w-0"><p className="text-xs text-gray-500 dark:text-gray-400">Marque & modèle</p><p className="mt-1.5 break-words text-base font-semibold text-gray-800 dark:text-gray-100">{[client.marque, client.modele].filter(Boolean).join(' ') || 'Véhicule à définir'}</p></div>
+              <div><p className="text-xs text-gray-500 dark:text-gray-400">Budget véhicule</p><p className="mt-1.5 text-base font-semibold tabular-nums text-gray-800 dark:text-gray-100">{numberWithUnit(client.budget, '€') || 'À définir'}</p></div>
+            </div>
+            <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-3">
+              <Field label="Kilométrage maximum">{numberWithUnit(client.max_km, 'km')}</Field>
+              <Field label="Année minimum">{client.premiere_immat}</Field>
+              <Field label="Couleur">{client.couleur}</Field>
+              <Field label="Carburant">{client.carburant}</Field>
+              <Field label="Boîte de vitesses">{client.boite}</Field>
+              <Field label="Puissance minimale">{numberWithUnit(client.puissance_min, 'CV')}</Field>
+            </dl>
+          </div>
+        </section>
+        <section aria-labelledby="notes-title" className={panel}>
+          <div className="flex items-center gap-2.5 border-b border-gray-100 px-5 py-4 dark:border-gray-700"><FileText size={17} className="text-gray-400"/><h2 id="notes-title" className="text-sm font-semibold text-gray-900 dark:text-gray-100">Notes & précisions</h2></div>
+          <p className={`whitespace-pre-wrap break-words p-5 text-sm leading-6 ${client.description?.trim() ? 'text-gray-600 dark:text-gray-300' : 'text-gray-400 dark:text-gray-500'}`}>{client.description?.trim() || 'Aucune note pour ce dossier.'}</p>
+        </section>
+      </div>
+    </div>
+
+    <EditClientModal isOpen={showEdit} onClose={() => {if (!updating) setShowEdit(false);}} onSubmit={updateClient} clientData={editData} isUpdating={updating}/>
+    <DeleteClientModal isOpen={showDelete} onClose={() => {if (!deleting) setShowDelete(false);}} onConfirm={deleteClient} clientName={name} isDeleting={deleting}/>
+  </section>;
+}

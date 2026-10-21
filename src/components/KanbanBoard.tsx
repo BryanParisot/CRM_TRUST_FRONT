@@ -6,18 +6,11 @@ import toast from 'react-hot-toast';
 import KanbanColumn from './KanbanColumn';
 import KanbanCard, {KanbanCardPreview} from './KanbanCard';
 import NewClientModal, {type ClientSubmissionData} from './NewClientModal';
+import {PIPELINE_STAGES as columns} from '../utils/pipeline';
 export interface Client {
   id:number;name:string;marque?:string;modele?:string;vehicle?:string;step:number;progress:number;
   hasNotification:boolean;mileage?:number;year?:number;premiere_immat?:string;price?:string;selectedVehicles?:string[];budget?:number|string;
 }
-const columns=[
-  {id:'col-1',title:'Premier échange',description:'Informations & critères',step:1},
-  {id:'col-2',title:'Propositions',description:'Recherche & sélection',step:2},
-  {id:'col-3',title:'Signature & acompte',description:'CGV, justificatifs & virement',step:3},
-  {id:'col-4',title:'Contrôles',description:'Vérifications du véhicule',step:4},
-  {id:'col-5',title:'Solde & documents',description:'Finalisation de l’achat',step:5},
-  {id:'col-6',title:'Livraison',description:'Remise du véhicule',step:6},
-];
 export default function KanbanBoard(){
   const [clients,setClients]=useState<Client[]>([]);
   const [activeClient,setActiveClient]=useState<Client|null>(null);

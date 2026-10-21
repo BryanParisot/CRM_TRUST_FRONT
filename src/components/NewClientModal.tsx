@@ -196,20 +196,18 @@ const NewClientModal: React.FC<NewClientModalProps> = ({
             >
               {/* Header */}
               <div className="relative bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white overflow-hidden shrink-0">
-                <div className="flex justify-between items-start relative z-10">
+                <div className="relative z-10 pr-12">
                   <div>
                     <h2 className="text-2xl font-bold">Nouveau Client</h2>
                     <p className="text-blue-100 text-sm mt-1">
                       {step === 1 ? "Étape 1 : Informations personnelles" : "Étape 2 : Recherche de véhicule"}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full backdrop-blur-md">
-                    <span className={`w-2 h-2 rounded-full ${step === 1 ? 'bg-white' : 'bg-white/40'}`} />
-                    <span className={`w-2 h-2 rounded-full ${step === 2 ? 'bg-white' : 'bg-white/40'}`} />
-                  </div>
                 </div>
 
                 <button
+                  type="button"
+                  aria-label="Fermer la fenêtre Nouveau client"
                   onClick={onClose}
                   className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors backdrop-blur-md z-20"
                 >

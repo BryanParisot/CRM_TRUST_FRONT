@@ -13,6 +13,8 @@ interface VehicleChecklist {
   name: string;
   link: string | null;
   checklistItems: ChecklistItem[];
+  isFinalChoice:boolean;
+  needsReconfirmation:boolean;
 }
 
 interface GarageChecklistTabProps {
@@ -31,6 +33,7 @@ const GarageChecklistTab: React.FC<GarageChecklistTabProps> = ({
         Vérification technique complète des véhicules par notre garage partenaire.
         Cliquez sur un véhicule pour voir et modifier sa checklist.
       </p>
+      {vehiclesChecklist.some(vehicle=>vehicle.isFinalChoice)?<p className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300">{vehiclesChecklist.find(vehicle=>vehicle.isFinalChoice)?.needsReconfirmation?'Choix à reconfirmer par le client':'Choix définitif du client'} : <strong>{vehiclesChecklist.find(vehicle=>vehicle.isFinalChoice)?.name}</strong></p>:<p className="mb-4 text-sm text-gray-500">En attente du choix définitif du client après consultation des contrôles.</p>}
     </div>
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {vehiclesChecklist.map(vehicle => (
@@ -40,6 +43,9 @@ const GarageChecklistTab: React.FC<GarageChecklistTabProps> = ({
           name={vehicle.name}
           link={vehicle.link}
           checklistItems={vehicle.checklistItems}
+          isFinalChoice={vehicle.isFinalChoice}
+          needsReconfirmation={vehicle.needsReconfirmation}
+          isNotChosen={vehiclesChecklist.some(item=>item.isFinalChoice)&&!vehicle.isFinalChoice}
           onClick={() => handleOpenVehicleChecklist(vehicle.id)}
         />
       ))}

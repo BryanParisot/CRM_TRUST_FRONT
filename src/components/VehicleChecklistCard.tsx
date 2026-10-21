@@ -7,12 +7,18 @@ export interface VehicleChecklistCardProps {
   link: string | null;
   checklistItems: ChecklistItem[];
   onClick: () => void;
+  isFinalChoice?:boolean;
+  needsReconfirmation?:boolean;
+  isNotChosen?:boolean;
 }
 const VehicleChecklistCard: React.FC<VehicleChecklistCardProps> = ({
   name,
   link,
   checklistItems,
-  onClick
+  onClick,
+  isFinalChoice=false,
+  needsReconfirmation=false,
+  isNotChosen=false
 }) => {
   // Count validated, pending and issue items
   const validated = checklistItems.filter(item => item.status === 'validated').length;
@@ -28,10 +34,12 @@ const VehicleChecklistCard: React.FC<VehicleChecklistCardProps> = ({
     if (total > 0 && validated === total) return 'border-green-300 dark:border-green-700';
     return 'border-gray-200 dark:border-gray-700';
   };
-  return <article className={`min-w-0 border-2 ${getBorderColor()} rounded-xl overflow-hidden transition-shadow hover:shadow-md`}>
+  return <article data-vehicle-not-chosen={isNotChosen} className={`min-w-0 border-2 rounded-xl overflow-hidden transition-shadow ${isNotChosen?'border-gray-200 bg-gray-50 opacity-60 dark:border-gray-700 dark:bg-gray-900/50':`${getBorderColor()} hover:shadow-md`}`}>
     <div className="p-4">
       <span className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300"><Car size={21}/></span>
       <h3 className="break-words font-semibold text-base">{name}</h3>
+      {isFinalChoice&&<p data-final-choice-badge className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${needsReconfirmation?'bg-amber-50 text-amber-700':'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'}`}>{needsReconfirmation?'Choix à reconfirmer':'Choix définitif du client'}</p>}
+      {isNotChosen&&<p className="mt-2 text-xs font-medium text-gray-500 dark:text-gray-400">Non retenu pour la suite</p>}
       {link&&<a href={link} target="_blank" rel="noopener noreferrer" className="mt-2 flex items-start gap-1.5 text-xs leading-5 text-blue-600 hover:underline dark:text-blue-400"><ExternalLink size={14} className="mt-0.5 shrink-0"/><span className="break-all">{link}</span></a>}
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 pt-4 dark:border-gray-700">
         <div className="text-sm font-medium">

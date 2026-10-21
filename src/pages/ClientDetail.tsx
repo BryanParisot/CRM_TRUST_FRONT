@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 
 import Breadcrumb from "../components/Breadcrumb";
@@ -70,6 +70,8 @@ interface VehicleChecklist {
   name: string;
   link: string | null;
   checklistItems: ChecklistItem[];
+  isFinalChoice:boolean;
+  needsReconfirmation:boolean;
 }
 
 // --- Composant principal ---
@@ -88,6 +90,8 @@ const ClientDetail: React.FC = () => {
 
   const [selectedChecklistVehicle, setSelectedChecklistVehicle] =
     useState<string | null>(null);
+  const editingChecklist=useRef<string|null>(null);
+  editingChecklist.current=selectedChecklistVehicle;
 
   const [clientData, setClientData] = useState<ClientData | null>(null);
 
@@ -131,18 +135,22 @@ const ClientDetail: React.FC = () => {
 
   useEffect(() => {
     if (!clientData) return;
+    const controller=new AbortController();let pending=false;
 
     const fetchPreselectedVehicles = async () => {
+      if(pending)return;pending=true;
       try {
         const res = await fetch(
           `http://localhost:3000/api/vehicles/client/${id}`,
           {
+            signal:controller.signal,
+            cache:'no-store',
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
             },
           }
         );
-
+        if(!res.ok)throw new Error('Impossible de charger les véhicules.');
         const data = await res.json();
 
         // Map data to vehiclesChecklist
@@ -152,6 +160,8 @@ const ClientDetail: React.FC = () => {
             id: v.id.toString(),
             name: v.title || v.name || 'Annonce véhicule',
             link: v.link || null,
+            isFinalChoice:Boolean(v.is_final_choice),
+            needsReconfirmation:Boolean(v.final_choice_needs_reconfirmation),
             checklistItems: (v.checklist || []).map((item: any) => ({
               id: item.id.toString(),
               name: item.name,
@@ -159,15 +169,21 @@ const ClientDetail: React.FC = () => {
               comment: item.comment
             }))
           }));
-        setVehiclesChecklist(mappedChecklist);
+        if(!controller.signal.aborted)setVehiclesChecklist(previous=>mappedChecklist.map(vehicle=>{
+          const draft=previous.find(item=>item.id===vehicle.id&&item.id===editingChecklist.current);
+          return draft?{...vehicle,checklistItems:draft.checklistItems}:vehicle;
+        }));
 
       } catch (error) {
-        console.error("Erreur fetch preselected:", error);
-      }
+        if(!controller.signal.aborted)console.error("Erreur fetch preselected:", error);
+      }finally{pending=false;}
     };
 
     fetchPreselectedVehicles();
-  }, [clientData]);
+    const timer=setInterval(fetchPreselectedVehicles,5000);
+    window.addEventListener('vehicles-updated',fetchPreselectedVehicles);window.addEventListener('focus',fetchPreselectedVehicles);
+    return()=>{controller.abort();clearInterval(timer);window.removeEventListener('vehicles-updated',fetchPreselectedVehicles);window.removeEventListener('focus',fetchPreselectedVehicles);};
+  }, [clientData?.id]);
 
 
 
@@ -333,6 +349,7 @@ const ClientDetail: React.FC = () => {
 
               // Optional: Show success message or refresh data
               console.log('Checklist saved successfully');
+              window.dispatchEvent(new Event('vehicles-updated'));
               return true;
             } catch (error) {
               console.error('Error saving checklist:', error);
